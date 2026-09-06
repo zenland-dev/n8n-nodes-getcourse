@@ -1,0 +1,25 @@
+name: Feature request
+description: A missing endpoint, field or convenience
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What you are trying to do
+      description: The workflow you are building, not only the API call you are missing.
+    validations:
+      required: true
+
+  - type: input
+    id: endpoint
+    attributes:
+      label: The GetCourse endpoint, if you know it
+      placeholder: "GET /pl/api/v1/deals/{id}"
+
+  - type: textarea
+    id: docs
+    attributes:
+      label: Where it is documented
+      description: >
+        A link to the Tech API redoc page or to help/api — GetCourse documents the two
+        APIs in different places, and they do not overlap.

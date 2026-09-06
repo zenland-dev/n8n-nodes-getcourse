@@ -1,0 +1,68 @@
+{
+	"name": "n8n-nodes-getcourse",
+	"version": "0.1.0",
+	"description": "GetCourse nodes for n8n: the Tech API v1, the legacy Import/Export API and a webhook trigger",
+	"keywords": [
+		"n8n-community-node-package",
+		"n8n",
+		"getcourse",
+		"lms",
+		"crm",
+		"online-courses"
+	],
+	"license": "MIT",
+	"homepage": "https://github.com/zenland-dev/n8n-nodes-getcourse",
+	"author": {
+		"name": "zenland-dev",
+		"email": "zenland.dev@gmail.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/zenland-dev/n8n-nodes-getcourse.git"
+	},
+	"bugs": {
+		"url": "https://github.com/zenland-dev/n8n-nodes-getcourse/issues"
+	},
+	"engines": {
+		"node": ">=20.19"
+	},
+	"main": "index.js",
+	"scripts": {
+		"build": "n8n-node build",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"format": "prettier nodes credentials --write",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/GetCourseApi.credentials.js",
+			"dist/credentials/GetCourseTechApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/GetCourse/GetCourse.node.js",
+			"dist/nodes/GetCourseLegacy/GetCourseLegacy.node.js",
+			"dist/nodes/GetCourseTrigger/GetCourseTrigger.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "^0.46.4",
+		"eslint": "9.39.4",
+		"prettier": "3.8.3",
+		"release-it": "^19.0.4",
+		"typescript": "5.9.3"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}

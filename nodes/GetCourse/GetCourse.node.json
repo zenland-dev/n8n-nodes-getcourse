@@ -1,0 +1,40 @@
+{
+	"node": "n8n-nodes-getcourse.getCourse",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Sales", "Marketing & Content", "Communication"],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://github.com/zenland-dev/n8n-nodes-getcourse?tab=readme-ov-file#credentials"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://github.com/zenland-dev/n8n-nodes-getcourse?tab=readme-ov-file"
+			}
+		]
+	},
+	"alias": [
+		"GetCourse",
+		"Геткурс",
+		"LMS",
+		"Tech API",
+		"User",
+		"Пользователь",
+		"Order",
+		"Заказ",
+		"Offer",
+		"Предложение",
+		"Training",
+		"Тренинг",
+		"Webinar",
+		"Вебинар",
+		"HelpDesk",
+		"Dialog",
+		"Диалог",
+		"Lesson",
+		"Урок",
+		"Course"
+	]
+}
