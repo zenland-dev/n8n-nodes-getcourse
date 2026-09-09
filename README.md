@@ -105,11 +105,9 @@ users or orders at all.
 | **Webhook** (2) | Subscribe · Unsubscribe |
 
 Dropdowns read the live account wherever the API publishes a list: user groups, departments,
-personal managers, offers, cancellation reasons and webinars. Custom fields have a picker
-too, with one condition — it is read from the user or the order named above it, because this
-API has no account-wide listing of them, so fill the identifier in first. Where the API
-publishes nothing at all — lessons, surveys, products, diploma templates — the field is a
-plain input and says so.
+personal managers, offers, cancellation reasons and webinars. Custom fields have one too — see
+below for where it reads them from. Where neither API publishes a listing — lessons, surveys,
+products, diploma templates — the field is a plain input and says so.
 
 There is no listing of users or of orders anywhere in this API, which is why the node has no
 "Get Many Users": a user is reached by ID, e-mail, phone or messenger chat ID, an order by its
@@ -136,14 +134,21 @@ rather than letting you fill in two and leaving the server to choose:
 ### Custom fields
 
 The Tech API writes custom fields by numeric ID and has no method that lists the account's
-fields. **Get Custom Fields** is the way round it: it answers keyed by ID, carries the name
-beside each value, and returns every field the account defines rather than only the filled
-ones. That is what fills the picker under **Update Custom Fields**, which is why the picker
-needs the user or the order filled in first — the listing has to be read from one of them.
+fields, so the picker under **Update Custom Fields** gets them elsewhere. For **user** fields
+it stays on the Tech API, where nothing is metered: it reads the personal-manager list, which
+takes no parameters, and asks `get-custom-fields` about the first one — the answer describes
+the account rather than that person. For **order** fields, and on an account with no personal
+managers, it falls back to the account dictionary on the Import/Export API, which costs one
+request from that budget and is remembered for two minutes; **Refresh List**, in the ⋮ menu beside the field, re-reads it once that window has passed. The IDs are the same numbers in
+both APIs and they are stable.
 
-Typing an ID by hand still works, and the Legacy node's **Custom Field → Get Many** lists the
-whole dictionary in one call if you would rather look it up there. The IDs are the same
-numbers in both APIs, and they are stable.
+**Get Custom Fields** is worth knowing about separately: it returns every field the account
+defines, not only the filled ones, with the name beside each value. The user and order
+versions answer different shapes — an object keyed by ID for a user, a plain array for an
+order — so the user operation emits one item carrying every field and the order operation one
+item per field.
+
+Typing an ID by hand still works, and so does an expression.
 
 ## GetCourse Legacy node
 

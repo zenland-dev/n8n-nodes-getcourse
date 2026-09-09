@@ -8,7 +8,7 @@ import type {
 import { NodeOperationError, randomInt, sleep } from 'n8n-workflow';
 
 import { accountBaseUrl } from '../../../../credentials/accountAddress';
-import { cached } from '../../../../utils/cache';
+import { CONFIG_TTL_MS, cached } from '../../../../utils/cache';
 import { extractStatusCode } from '../../../../utils/httpError';
 import { flattenQuery } from '../../../../utils/query';
 import { acquireSlot, slotDelay } from '../../../../utils/rateLimiter';
@@ -401,7 +401,9 @@ export async function exportRequest(
 export async function fieldsRequest(this: LegacyContext): Promise<LegacyEnvelope> {
 	const account = await resolveAccount.call(this);
 
-	return await cached(`legacy|fields|${account.credentialId}`, async () => {
+	return await cached(
+		`legacy|fields|${account.credentialId}`,
+		async () => {
 		const body = ['action=get', `key=${encodeURIComponent(account.schoolKey)}`].join('&');
 
 		const envelope = await send.call(
@@ -425,8 +427,12 @@ export async function fieldsRequest(this: LegacyContext): Promise<LegacyEnvelope
 			}),
 		);
 
-		return assertSuccess.call(this, envelope);
-	});
+			return assertSuccess.call(this, envelope);
+		},
+		// Held longer than a dictionary read normally is: this is the one dropdown
+		// source that spends from the account's export budget.
+		CONFIG_TTL_MS,
+	);
 }
 
 /** The same as {@link exportRequest}, memoised — for the group dropdown only. */

@@ -13,6 +13,29 @@
 
 const TTL_MS = 60_000;
 
+/**
+ * The window for a read that costs the account something to make.
+ *
+ * The legacy field dictionary is the one dropdown source counted against the
+ * hundred Export API requests an account gets every two hours, and unlike a
+ * group list it describes the account's *configuration* — somebody adding a
+ * custom field in the GetCourse admin is a rare event, not a stream. So it is
+ * held longer than the rest, which turns a session of opening and closing a node
+ * into a single request.
+ *
+ * Two minutes rather than more, because n8n offers a **Refresh List** action in
+ * every dropdown's ⋮ menu and that action cannot reach past this memo: the
+ * request it makes is indistinguishable from the one that filled it. A refresh
+ * that does nothing for five minutes reads as a broken button, so the window is
+ * short enough to be waited out.
+ *
+ * Two minutes rather than less, because it is not what keeps the account safe —
+ * `acquireSlot` does, capping the picker at the credential's Export Requests per
+ * Hour whatever this value is, and refusing within ten seconds instead of
+ * queueing. This is politeness; the limiter is the guarantee.
+ */
+export const CONFIG_TTL_MS = 120_000;
+
 const entries = new Map<string, { expiresAt: number; value: Promise<unknown> }>();
 
 function prune(now: number): void {
@@ -28,7 +51,7 @@ function prune(now: number): void {
  * still filling in, and they would otherwise have to wait out the TTL. The
  * rejection still reaches this caller.
  */
-export async function cached<T>(key: string, fetch: () => Promise<T>): Promise<T> {
+export async function cached<T>(key: string, fetch: () => Promise<T>, ttlMs = TTL_MS): Promise<T> {
 	const now = Date.now();
 	prune(now);
 
@@ -36,7 +59,7 @@ export async function cached<T>(key: string, fetch: () => Promise<T>): Promise<T
 	if (hit !== undefined) return (await hit.value) as T;
 
 	const value = fetch();
-	entries.set(key, { expiresAt: now + TTL_MS, value });
+	entries.set(key, { expiresAt: now + ttlMs, value });
 	void value.catch(() => entries.delete(key));
 
 	return await value;

@@ -12,6 +12,38 @@ unavoidable it is a major version, and this file says exactly what to change and
 Below 1.0.0 that slot is the minor number, which is what semantic versioning reserves it for,
 and a release that renames or removes anything says **action required** in its heading.
 
+## [0.2.2] — 2026-09-10
+
+### Fixed
+
+- **The custom-field picker no longer asks you to fill the form before it will help you fill
+  the form.** It read the account's fields from the user or the order the operation names, so
+  it refused to open with «Name a user first» until that identifier was filled in — and an
+  identifier written as an expression, which is the normal case in a workflow, cannot resolve
+  while the editor is merely open, so the picker failed on nodes that were configured
+  correctly. It now reads the account-wide dictionary instead and depends on nothing else on
+  the panel. The IDs are the same numbers; nothing saved needs changing.
+
+- **The user-field picker no longer spends from the export budget.** The account dictionary
+  lives on the Import/Export API and is counted against the hundred requests per two hours a
+  school shares between all its integrations, so the picker now tries the Tech API first,
+  where nothing is metered: `get-personal-managers` takes no parameters and answers full user
+  records, and any one of them serves as the sample `get-custom-fields` insists on naming.
+  Which person is asked makes no difference — the answer describes the account, not them,
+  which was checked on two accounts against the dictionary field for field. Deleted records
+  are skipped and an `admin` is preferred, because that list is whoever the school configured
+  as a personal manager rather than its whole staff: one account answered 121 people, 74 of
+  them admins, and another a single teacher with the account owner nowhere in it. An account
+  with no personal managers at all, or a credential without a developer key, falls back to the
+  dictionary.
+
+  **Order fields still use the dictionary**, because there is no way to obtain a sample order
+  without one. That call is now remembered for two minutes rather than one, which turns a
+  session of opening and closing a node into a single request. Two rather than more because
+  n8n's own **Refresh List** action, in the ⋮ menu beside the field, cannot reach past the
+  memo — the request it makes looks identical — and a refresh that does nothing for five
+  minutes reads as a broken button.
+
 ## [0.2.1] — 2026-09-10
 
 ### Changed — action required
@@ -118,6 +150,7 @@ disagree, the code follows the service and says so in a comment at the point it 
 - Published from GitHub Actions with an npm provenance statement, which n8n has required of
   submitted nodes since 1 May 2026.
 
+[0.2.2]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.2.2
 [0.2.1]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.2.1
 [0.2.0]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.2.0
 [0.1.0]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.1.0

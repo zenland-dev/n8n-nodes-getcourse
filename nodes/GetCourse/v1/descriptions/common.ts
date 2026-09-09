@@ -150,16 +150,19 @@ export function returnAllProperties(
  * The custom-field editor for the Tech API.
  *
  * The Tech API writes custom fields by numeric ID and publishes no account-wide
- * dictionary of those IDs, so this was a bare number-and-value editor for a
- * while. It need not have been: `get-custom-fields` enumerates every field the
- * account defines, keyed by the same ID the writer takes and carrying the name
- * beside it, so reading it from the object the operation already names turns the
- * number into a picker.
+ * dictionary of those IDs, so this was a bare number-and-value editor at first.
+ * The picker that replaced it reads the account's whole dictionary from the
+ * legacy API, which both nodes can now reach because they share one credential.
  *
- * What that costs is the dependency below — the list cannot load until the user
- * or the order is filled in, because the request has to name one. The field
- * stays an `options` type rather than a `resourceLocator`, so an ID can still be
- * supplied by expression when the workflow computes it.
+ * It deliberately depends on nothing else on the panel. The first version read
+ * the list from the user or the order the operation names, and that was a
+ * mistake worth naming: a control whose job is to help fill the form refused to
+ * open until the form was already filled, and an identifier written as an
+ * expression — the normal case in a workflow — cannot resolve while the editor
+ * is merely open, so the picker failed on nodes that were configured correctly.
+ *
+ * The field stays an `options` type rather than a `resourceLocator`, so an ID
+ * can still be supplied by expression when the workflow computes it.
  */
 export function customFieldsProperty(resource: string, operations: string[]): INodeProperties {
 	const isUser = resource === 'user';
@@ -172,7 +175,7 @@ export function customFieldsProperty(resource: string, operations: string[]): IN
 		placeholder: 'Add Custom Field',
 		default: {},
 		displayOptions: show(resource, operations),
-		description: `Дополнительные поля, keyed by numeric field ID. The list is read from the ${isUser ? 'user' : 'order'} named above, which is the only listing this API has — every field the account defines comes back, whether or not that ${isUser ? 'person' : 'order'} has a value for it.`,
+		description: `Дополнительные поля, keyed by numeric field ID. The list holds every ${isUser ? 'user' : 'order'} field the account defines, read from the account itself rather than from any one ${isUser ? 'person' : 'order'}.`,
 		options: [
 			{
 				name: 'field',
@@ -184,11 +187,6 @@ export function customFieldsProperty(resource: string, operations: string[]): IN
 						type: 'options',
 						typeOptions: {
 							loadOptionsMethod: isUser ? 'getUserCustomFieldIds' : 'getDealCustomFieldIds',
-							// Without this the list is fetched once and keeps showing the
-							// fields of whoever was named when it first loaded.
-							loadOptionsDependsOn: isUser
-								? ['identifyBy', 'userId', 'email', 'phone']
-								: ['dealId'],
 						},
 						default: '',
 						required: true,

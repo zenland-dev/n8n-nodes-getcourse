@@ -1,6 +1,9 @@
 import type { IDataObject, ILoadOptionsFunctions, INodePropertyOptions } from 'n8n-workflow';
-import { NodeOperationError } from 'n8n-workflow';
 
+// The account-wide custom-field dictionary lives on the legacy API and nowhere
+// else. Both nodes have shared one credential since 0.2.1, so reading it from
+// here costs nothing but this import — see `accountFieldOptions` below.
+import { fieldsRequest } from '../../../GetCourseLegacy/v1/transport';
 import { techApiCachedRequest } from '../transport';
 
 /**
@@ -12,7 +15,8 @@ import { techApiCachedRequest } from '../transport';
  * templates, surveys, lessons, products — has no listing endpoint anywhere in
  * the API, so those stay plain inputs rather than pickers that would always be
  * empty. Custom fields used to be on that list and no longer are; see
- * `customFieldOptions` below for the listing that was hiding in plain sight.
+ * `techUserFieldOptions` and `accountFieldOptions` below for where theirs comes
+ * from.
  */
 async function dictionary(this: ILoadOptionsFunctions, endpoint: string): Promise<IDataObject[]> {
 	const data = (await techApiCachedRequest.call(this, endpoint)) as unknown;
@@ -123,116 +127,187 @@ export async function getOffers(this: ILoadOptionsFunctions): Promise<INodePrope
 const SYSTEM_FIELD = /^gc_system_/;
 
 /**
- * Flattens whichever of the two shapes `get-custom-fields` answered with.
+ * One descriptor from `POST /pl/api/account/fields`, as far as this file cares.
  *
- * The two endpoints do not agree, and it is not a subtle difference. On a live
- * account with the same thirteen fields defined for each context:
- *
- * - `/user/get-custom-fields` answers an **object keyed by field id**, entries
- *   `{name, value, type, units}` — the id is the key and appears nowhere inside;
- * - `/deal/get-custom-fields` answers a **plain array**, entries
- *   `{name, id, value, type}` — the id is a field of the entry and there is no
- *   `units`.
- *
- * Reading only the first shape is what an assumption of symmetry costs: the
- * order picker silently offered nothing at all. Both are handled here, and
- * anything that is neither yields no rows rather than throwing, because an
- * unfamiliar shape should leave the user typing an id — which still works —
- * rather than blocking the panel.
+ * `id` and `field_order_pos` come back as numbers, `title` and `context_type` as
+ * strings, and `context_type` is `user` or `deal` and nothing else. Everything
+ * stays optional because a dictionary is account data, not a contract.
  */
-function toFieldRows(data: unknown): Array<{ id: string; row: IDataObject }> {
-	if (Array.isArray(data)) {
-		return (data as IDataObject[])
-			.map((row) => ({ id: String(row?.id ?? ''), row: row ?? {} }))
-			.filter((entry) => entry.id !== '');
-	}
-
-	if (data !== null && typeof data === 'object') {
-		return Object.entries(data as IDataObject).map(([id, entry]) => ({
-			id,
-			row: (entry ?? {}) as IDataObject,
-		}));
-	}
-
-	return [];
+interface FieldDescriptor {
+	id?: string | number;
+	title?: string;
+	type?: string;
+	context_type?: string;
+	field_order_pos?: string | number;
 }
 
 /**
- * The custom-field dictionary the Tech API does not admit to publishing.
- *
- * There is no account-wide listing of custom fields anywhere in this API, which
- * is why the editor used to ask for a bare number. But `get-custom-fields` is
- * one in disguise: whichever shape it answers with, it enumerates **every**
- * field the account defines for that context, `value: null` where the object
- * has none. So one read of any existing object gives id → name for the account.
- *
- * The cost is that the dropdown needs an object to read it from, which is why
- * these depend on the identifier the operation already asks for. That is also
- * the reason for reading it live rather than caching it per credential: two
- * users answer the same field list, but the request has to name one of them.
+ * GetCourse splices five `gc_system_*` fields of its own into each context. They
+ * are still offered — a workflow may want a UTM value — but they do not belong
+ * above the fields somebody actually defined.
  */
-async function customFieldOptions(
+function sortFieldOptions(rows: INodePropertyOptions[]): INodePropertyOptions[] {
+	return [...rows].sort((left, right) => {
+		const bySystem =
+			Number(SYSTEM_FIELD.test(String(left.name))) - Number(SYSTEM_FIELD.test(String(right.name)));
+		if (bySystem !== 0) return bySystem;
+
+		return String(left.name).localeCompare(String(right.name));
+	});
+}
+
+/**
+ * The account's custom fields, by numeric id — which is what the Tech API writes.
+ *
+ * The always-works route, and the only one for orders. `POST /pl/api/account/fields`
+ * lists the whole account, both contexts at once, and the ids it reports are
+ * exactly the ids the Tech API's `update-custom-fields` takes — checked field for
+ * field on a live account. It depends on nothing else on the panel, which the
+ * first version of this picker did: it read the list from the user or the order
+ * the operation names, so it refused to open until that identifier was filled in,
+ * and an identifier written as an expression does not resolve while the editor is
+ * merely open. A picker must not depend on the form it exists to fill in.
+ *
+ * Reaching across to the other node's transport is fine now that both nodes share
+ * one credential; before 0.2.1 they did not, and that, rather than anything
+ * technical, is why this was not done from the start.
+ *
+ * The cost is the export budget: this call is counted against the account's
+ * hundred requests per two hours, like every other `/pl/api/account/` read, which
+ * is why `techUserFieldOptions` above is tried first for the user context.
+ * `fieldsRequest` memoises it for two minutes and refuses quickly rather than
+ * queueing when the budget is spent, so a dropdown cannot lock a school out of
+ * its own API.
+ */
+async function accountFieldOptions(
 	this: ILoadOptionsFunctions,
-	endpoint: string,
-	qs: IDataObject,
+	context: 'user' | 'deal',
 ): Promise<INodePropertyOptions[]> {
-	const data = (await techApiCachedRequest.call(this, endpoint, qs)) as unknown;
+	const envelope = await fieldsRequest.call(this);
+	const info = envelope.info;
+	const all: FieldDescriptor[] = Array.isArray(info) ? (info as FieldDescriptor[]) : [];
 
-	return toFieldRows(data)
-		.map(({ id, row }) => ({
-			name: String(row.name ?? '') || id,
-			value: id,
-			description: [`ID ${id}`, String(row.type ?? '')].filter((part) => part !== '').join(' · '),
-		}))
-		.sort((left, right) => {
-			// GetCourse splices five `gc_system_*` fields of its own into every
-			// account's user context. They are still offered — a workflow may want a
-			// UTM value — but they do not belong above the fields somebody defined.
-			const bySystem = Number(SYSTEM_FIELD.test(left.name)) - Number(SYSTEM_FIELD.test(right.name));
-			if (bySystem !== 0) return bySystem;
+	// `context_type` was `user` or `deal` on every descriptor a live account
+	// returned. If a school ever answers something else, showing the whole
+	// dictionary beats showing an empty list: the ids are still correct and the
+	// description below says which context each field belongs to.
+	const scoped = all.filter((field) => String(field.context_type ?? '') === context);
+	const fields = scoped.length > 0 ? scoped : all;
+	const showContext = scoped.length === 0;
 
-			return left.name.localeCompare(right.name);
-		});
+	const rows = fields
+		.filter((field) => field.id !== undefined && String(field.title ?? '') !== '')
+		.map((field) => ({
+			name: String(field.title),
+			value: String(field.id),
+			description: [
+				`ID ${String(field.id)}`,
+				String(field.type ?? ''),
+				showContext ? String(field.context_type ?? '') : '',
+			]
+				.filter((part) => part !== '')
+				.join(' · '),
+		}));
+
+	return sortFieldOptions(rows);
 }
 
 /**
- * Reads whichever identifier the User operations are currently set to.
+ * Picks the steadiest person in the personal-manager list to ask about fields.
  *
- * An expression reaches this resolved, or not at all — either way an empty
- * value means the dropdown has nothing to read the account's fields with, and
- * saying so beats an empty list that looks like an account with no fields.
+ * The list is whoever the school configured as a personal manager, not its whole
+ * staff, so what it contains varies: one account answered 121 people — 74 with
+ * `type: admin`, 45 plain users, 2 teachers — and another answered a single
+ * teacher, its account owner nowhere in it. Any of them gives the same field
+ * list, so the choice only matters for how likely the record is to still be
+ * there tomorrow: an admin outlives a customer who was made a manager once.
+ *
+ * Deleted records are skipped outright — GetCourse keeps them with
+ * `deleted: true`, and asking about one wastes the free route and falls through
+ * to the metered dictionary for no reason.
  */
-function currentUser(this: ILoadOptionsFunctions): IDataObject {
-	const by = String(this.getCurrentNodeParameter('identifyBy') ?? 'userId');
-	const value = String(this.getCurrentNodeParameter(by) ?? '').trim();
+function sampleUserId(managers: IDataObject[]): string {
+	const usable = managers.filter(
+		(row) => row.deleted !== true && String(row.id ?? '') !== '',
+	);
+	if (usable.length === 0) return '';
 
-	if (value === '') {
-		throw new NodeOperationError(this.getNode(), 'Name a user first', {
-			description:
-				'This list is read from a user, because the Tech API has no account-wide listing of custom fields. Fill in the ID, e-mail or phone number above and open the list again — any existing user answers with the whole set of fields the account defines.',
+	const admin = usable.find((row) => String(row.type ?? '') === 'admin');
+	return String((admin ?? usable[0]).id);
+}
+
+/**
+ * The user's custom fields, read from the Tech API and costing nothing.
+ *
+ * `get-custom-fields` lists every field the account defines for the user
+ * context — values null where the person has none — but it insists on naming a
+ * person, and there is no user listing anywhere in this API. `get-personal-managers`
+ * is the way round that: it answers full user records and takes no parameters,
+ * so the first manager serves as a sample. Which person is asked does not matter,
+ * because the answer describes the account rather than them; that was checked on
+ * two accounts, where the manager route returned 13 and 106 fields against 13 and
+ * 106 user-context descriptors in the legacy dictionary.
+ *
+ * Worth the two extra round trips because both are on the Tech API, which has no
+ * published quota, while the legacy dictionary spends one of the hundred Export
+ * requests the whole school shares every two hours.
+ *
+ * Returns null rather than throwing on anything unexpected — an account with no
+ * personal managers included — so the caller falls back to the dictionary that
+ * always works. Silence is safe here only because it is a fallback and not an
+ * answer.
+ */
+async function techUserFieldOptions(
+	this: ILoadOptionsFunctions,
+): Promise<INodePropertyOptions[] | null> {
+	try {
+		const managers = (await techApiCachedRequest.call(
+			this,
+			'/common/get-personal-managers',
+		)) as unknown;
+
+		if (!Array.isArray(managers) || managers.length === 0) return null;
+
+		const userId = sampleUserId(managers as IDataObject[]);
+		if (userId === '') return null;
+
+		const data = (await techApiCachedRequest.call(this, '/user/get-custom-fields', {
+			userId,
+		})) as unknown;
+
+		// The user endpoint answers an object keyed by field id, entries
+		// `{name, value, type, units}`. The deal one answers an array instead, which
+		// is why that context is not routed through here at all.
+		if (data === null || typeof data !== 'object' || Array.isArray(data)) return null;
+
+		const rows = Object.entries(data as IDataObject).map(([id, entry]) => {
+			const row = (entry ?? {}) as IDataObject;
+			return {
+				name: String(row.name ?? '') || id,
+				value: id,
+				description: [`ID ${id}`, String(row.type ?? '')].filter((p) => p !== '').join(' · '),
+			};
 		});
-	}
 
-	return { [by]: value };
+		return rows.length === 0 ? null : sortFieldOptions(rows);
+	} catch {
+		// A missing developer key, a 403, an account that answers something else —
+		// all of them mean "ask the dictionary instead", and the dictionary reports
+		// its own failures properly.
+		return null;
+	}
 }
 
 export async function getUserCustomFieldIds(
 	this: ILoadOptionsFunctions,
 ): Promise<INodePropertyOptions[]> {
-	return await customFieldOptions.call(this, '/user/get-custom-fields', currentUser.call(this));
+	// The Tech API first, because it costs the account nothing; the dictionary
+	// only when that route is unavailable, because it spends export budget.
+	return (await techUserFieldOptions.call(this)) ?? (await accountFieldOptions.call(this, 'user'));
 }
 
 export async function getDealCustomFieldIds(
 	this: ILoadOptionsFunctions,
 ): Promise<INodePropertyOptions[]> {
-	const dealId = String(this.getCurrentNodeParameter('dealId') ?? '').trim();
-
-	if (dealId === '') {
-		throw new NodeOperationError(this.getNode(), 'Name an order first', {
-			description:
-				'This list is read from an order, because the Tech API has no account-wide listing of custom fields. Fill in the Order ID above and open the list again — any existing order answers with the whole set of fields the account defines.',
-		});
-	}
-
-	return await customFieldOptions.call(this, '/deal/get-custom-fields', { dealId });
+	return await accountFieldOptions.call(this, 'deal');
 }
