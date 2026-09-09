@@ -24,6 +24,49 @@ const HOSTNAME_ALLOWED = /[^a-z0-9.-]/g;
 const NUMERIC_HOST = /^[0-9.]+$/;
 
 /**
+ * The host a credential test aims at when the address fields do not yield one.
+ *
+ * The alternative is the empty string, and that is what this replaces: the test
+ * `baseURL` is `=https://{{ … }}`, so an empty host produced the literal
+ * `https://`, which axios then read as the host `pl` and reported as the single
+ * word `ENOTFOUND` — a message naming neither the credential nor the field that
+ * was left blank. `.invalid` is reserved by RFC 2606 and can never resolve, so
+ * the test still fails, but it fails naming the reason.
+ *
+ * Only the credential test uses it. `accountBaseUrl` keeps returning `''`,
+ * because the transport checks for exactly that and raises a proper error.
+ */
+const UNRESOLVED_HOST = 'address-not-set.invalid';
+
+/**
+ * Reduces whatever the user typed into a bare account name.
+ *
+ * The field asks for `myschool` and the address on screen reads
+ * `myschool.getcourse.ru`, so people paste the whole thing — the full URL as
+ * often as the hostname. Keeping only `[a-z0-9-]` turned that into
+ * `myschoolgetcourseru`, a name that resolves nowhere, and the only symptom was
+ * a credential test failing with a DNS error naming a host nobody typed.
+ *
+ * So the domain is cut off rather than mangled: everything from the first dot
+ * on is dropped, along with any scheme, path, userinfo and port around it. The
+ * Domain dropdown decides the suffix, which is the whole point of it being a
+ * closed list.
+ */
+function normaliseSubdomain(value: unknown): string {
+	return String(value ?? '')
+		.trim()
+		.toLowerCase()
+		.replace(/^[a-z][a-z0-9+.-]*:\/\//, '')
+		.split('/')[0]
+		.split('?')[0]
+		.split('@')
+		.pop()!
+		.split(':')[0]
+		.split('.')[0]
+		.replace(SUBDOMAIN_ALLOWED, '');
+}
+
+/**
  * Reduces whatever the user typed into a bare hostname.
  *
  * People paste `https://school.example.com/pl/api/` as readily as they type
@@ -78,7 +121,14 @@ function normaliseHostname(value: unknown): string {
  */
 export function accountHostExpression(ref: string): string {
 	const domains = JSON.stringify([...ACCOUNT_DOMAINS]);
-	const subdomain = `String(${ref}.subdomain || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "")`;
+	// Mirrors `normaliseSubdomain`: a pasted `myschool.getcourse.ru`, or a whole
+	// URL, has to reduce to `myschool` here exactly as it does in the transport.
+	const subdomain =
+		`String(${ref}.subdomain || "")` +
+		'.trim().toLowerCase()' +
+		'.replace(/^[a-z][a-z0-9+.-]*:\\/\\//, "")' +
+		'.split("/")[0].split("?")[0].split("@").pop().split(":")[0].split(".")[0]' +
+		'.replace(/[^a-z0-9-]/g, "")';
 	const domain = `String(${ref}.domain || "")`;
 
 	// Step for step the same reduction as `normaliseHostname` below, and it has to
@@ -101,8 +151,10 @@ export function accountHostExpression(ref: string): string {
 		// The numeric-host test mirrors NUMERIC_HOST in `normaliseHostname`. Both
 		// halves have to refuse the same values or the credential test and the node
 		// end up pointed at different hosts.
-		` ? (${custom}.includes(".") && !/^[0-9.]+$/.test(${custom}) ? ${custom} : "")` +
-		` : (${domains}.includes(${domain}) && ${subdomain} !== "" ? ${subdomain} + "." + ${domain} : "")`
+		// The fallback is a hostname rather than an empty string on purpose — see
+		// UNRESOLVED_HOST. It only ever reaches a credential test.
+		` ? (${custom}.includes(".") && !/^[0-9.]+$/.test(${custom}) ? ${custom} : "${UNRESOLVED_HOST}")` +
+		` : (${domains}.includes(${domain}) && ${subdomain} !== "" ? ${subdomain} + "." + ${domain} : "${UNRESOLVED_HOST}")`
 	);
 }
 
@@ -121,10 +173,7 @@ export function accountBaseUrl(credentials: {
 	const domain = String(credentials.domain ?? '');
 	if (!(ACCOUNT_DOMAINS as readonly string[]).includes(domain)) return '';
 
-	const subdomain = String(credentials.subdomain ?? '')
-		.trim()
-		.toLowerCase()
-		.replace(SUBDOMAIN_ALLOWED, '');
+	const subdomain = normaliseSubdomain(credentials.subdomain);
 
 	return subdomain === '' ? '' : `https://${subdomain}.${domain}`;
 }
@@ -162,7 +211,7 @@ export const accountAddressProperties: INodeProperties[] = [
 		placeholder: 'myschool',
 		displayOptions: { show: { accountMode: ['subdomain'] } },
 		description:
-			'Имя аккаунта. The part of the address in front of the domain — for myschool.getcourse.ru that is myschool. Only letters, digits and hyphens are kept.',
+			'Имя аккаунта. The part of the address in front of the domain — for myschool.getcourse.ru that is myschool. Pasting the whole address, or the whole URL, works too: everything from the first dot on is dropped and the Domain below decides the rest.',
 	},
 	{
 		displayName: 'Domain',
@@ -190,18 +239,3 @@ export const accountAddressProperties: INodeProperties[] = [
 			'Домен школы, без схемы и пути. This credential will send the account API key to that host, so make sure it is the school domain and nothing else.',
 	},
 ];
-
-/**
- * Pins n8n's own domain-restriction field to "none" and hides it.
- *
- * n8n injects this field into every credential carrying an `authenticate` block,
- * defaulting to "all" — and with "all" anyone who can edit the credential may
- * select it in an HTTP Request node, type any URL, and have n8n attach the token
- * to it. Declaring the property ourselves skips that injection entirely.
- */
-export const pinnedHttpRequestDomains: INodeProperties = {
-	displayName: 'Allowed HTTP Request Domains',
-	name: 'allowedHttpRequestDomains',
-	type: 'hidden',
-	default: 'none',
-};

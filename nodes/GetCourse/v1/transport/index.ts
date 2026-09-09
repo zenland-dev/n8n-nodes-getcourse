@@ -25,7 +25,7 @@ export type GetCourseContext =
 	| IWebhookFunctions
 	| IPollFunctions;
 
-export const CREDENTIAL_NAME = 'getCourseTechApi';
+export const CREDENTIAL_NAME = 'getCourseApi';
 
 /** Everything under the Tech API lives below this prefix. */
 const API_PREFIX = '/pl/api/v1';
@@ -46,6 +46,7 @@ interface AccountConnection {
 	baseUrl: string;
 	requestsPerSecond: number;
 	credentialId: string;
+	authorization: string;
 }
 
 async function resolveAccount(this: GetCourseContext): Promise<AccountConnection> {
@@ -68,10 +69,30 @@ async function resolveAccount(this: GetCourseContext): Promise<AccountConnection
 		);
 	}
 
+	// Built here rather than by the credential's `authenticate` block, which the
+	// credential deliberately does not have: declaring one makes n8n offer this
+	// credential inside an HTTP Request node and inject its domain-restriction
+	// field, and pinning that field to `none` is what used to refuse the
+	// credential's own Test button. See the comment on the credential class.
+	const developerKey = String(credentials.developerApiKey ?? '').trim();
+
+	if (developerKey === '') {
+		throw new NodeOperationError(this.getNode(), 'The GetCourse credential has no developer key', {
+			description:
+				'The Tech API is reached with two keys joined by an underscore, and only one of them is in this credential. Open it and fill in the Developer Key — the one issued at getcourse.ru/issuedeveloperkey. Without it this node cannot make a request; the GetCourse Legacy node works on the Secret Key alone.',
+		});
+	}
+
+	// The school key is the account Secret Key on every account tried, so the
+	// separate field is a fallback rather than the norm — see the credential.
+	const schoolKey =
+		String(credentials.schoolApiKey ?? '').trim() || String(credentials.secretKey ?? '').trim();
+
 	return {
 		baseUrl,
 		requestsPerSecond: Number(credentials.requestsPerSecond) || 5,
 		credentialId: this.getNode().credentials?.[CREDENTIAL_NAME]?.id ?? 'unbound',
+		authorization: `Bearer ${developerKey}_${schoolKey}`,
 	};
 }
 
@@ -123,7 +144,7 @@ export async function techApiRequest(
 		ignoreHttpStatusErrors: true,
 	};
 
-	if (options.headers !== undefined) requestOptions.headers = options.headers;
+	requestOptions.headers = { Authorization: account.authorization, ...options.headers };
 	if (body !== undefined) requestOptions.body = body;
 
 	const query = compactQuery(qs);
@@ -137,11 +158,9 @@ export async function techApiRequest(
 		let response: IDataObject;
 
 		try {
-			response = (await this.helpers.httpRequestWithAuthentication.call(
-				this,
-				CREDENTIAL_NAME,
-				requestOptions,
-			)) as IDataObject;
+			// `httpRequest`, not `httpRequestWithAuthentication`: the credential has no
+			// `authenticate` block to apply, and the bearer is already on the request.
+			response = (await this.helpers.httpRequest(requestOptions)) as IDataObject;
 		} catch (error) {
 			// Status errors are switched off above, so anything here is a transport
 			// failure: DNS, TLS, a reset connection.

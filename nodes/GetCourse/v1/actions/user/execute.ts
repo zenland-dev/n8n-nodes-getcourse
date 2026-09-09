@@ -212,7 +212,7 @@ async function updateCustomFields(
 	if (Object.keys(customFields).length === 0) {
 		throw new NodeOperationError(this.getNode(), 'No custom fields to write', {
 			description:
-				"Add at least one row with the field's numeric ID. The Tech API publishes no listing of those IDs; the GetCourse Legacy node's Custom Field resource does.",
+				"Add at least one field under Custom Fields. The picker lists the account's fields once the user above is filled in.",
 			itemIndex,
 		});
 	}

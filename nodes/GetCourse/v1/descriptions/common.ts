@@ -149,13 +149,21 @@ export function returnAllProperties(
 /**
  * The custom-field editor for the Tech API.
  *
- * A deliberate compromise. The Tech API writes custom fields by numeric ID and
- * publishes no dictionary of those IDs anywhere — its read side answers with
- * names and no IDs, and there is no account-wide listing at all. So this is a
- * plain ID-and-value editor with a pointer to where the IDs can be found, rather
- * than the live picker the same package's legacy node can offer.
+ * The Tech API writes custom fields by numeric ID and publishes no account-wide
+ * dictionary of those IDs, so this was a bare number-and-value editor for a
+ * while. It need not have been: `get-custom-fields` enumerates every field the
+ * account defines, keyed by the same ID the writer takes and carrying the name
+ * beside it, so reading it from the object the operation already names turns the
+ * number into a picker.
+ *
+ * What that costs is the dependency below — the list cannot load until the user
+ * or the order is filled in, because the request has to name one. The field
+ * stays an `options` type rather than a `resourceLocator`, so an ID can still be
+ * supplied by expression when the workflow computes it.
  */
 export function customFieldsProperty(resource: string, operations: string[]): INodeProperties {
+	const isUser = resource === 'user';
+
 	return {
 		displayName: 'Custom Fields',
 		name: 'customFieldsUi',
@@ -164,21 +172,27 @@ export function customFieldsProperty(resource: string, operations: string[]): IN
 		placeholder: 'Add Custom Field',
 		default: {},
 		displayOptions: show(resource, operations),
-		description:
-			"Дополнительные поля, keyed by numeric field ID. The Tech API has no method that lists field IDs — the GetCourse Legacy node's Custom Field resource does, and so does Профиль → Настройки аккаунта → Дополнительные поля in the browser.",
+		description: `Дополнительные поля, keyed by numeric field ID. The list is read from the ${isUser ? 'user' : 'order'} named above, which is the only listing this API has — every field the account defines comes back, whether or not that ${isUser ? 'person' : 'order'} has a value for it.`,
 		options: [
 			{
 				name: 'field',
 				displayName: 'Field',
 				values: [
 					{
-						displayName: 'Field ID',
+						displayName: 'Field Name or ID',
 						name: 'id',
-						type: 'string',
+						type: 'options',
+						typeOptions: {
+							loadOptionsMethod: isUser ? 'getUserCustomFieldIds' : 'getDealCustomFieldIds',
+							// Without this the list is fetched once and keeps showing the
+							// fields of whoever was named when it first loaded.
+							loadOptionsDependsOn: isUser
+								? ['identifyBy', 'userId', 'email', 'phone']
+								: ['dealId'],
+						},
 						default: '',
 						required: true,
-						placeholder: '3',
-						description: 'ID дополнительного поля, a number',
+						description: `Дополнительное поле аккаунта. ${DYNAMIC_OPTIONS_DESCRIPTION}.`,
 					},
 					{
 						displayName: 'Value',

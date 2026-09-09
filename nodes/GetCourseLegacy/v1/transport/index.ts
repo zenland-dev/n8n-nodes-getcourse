@@ -147,8 +147,7 @@ function assertEnvelope(
 	// the help page promises for a disabled API.
 	if (text === '') {
 		throw new NodeOperationError(this.getNode(), 'GetCourse answered nothing at all', {
-			description:
-				`${url} returned ${status} with an empty body, so there is no way to tell whether anything was written — and on the imports observed this way, nothing was. This is how GetCourse refuses an import the plan does not include: it does not answer error_code 917, it answers nothing. Check the account's plan first, then that the key is allowed to write under Профиль → Настройки аккаунта → АПИ, and confirm in the account itself whether the object appeared before running the workflow again.`,
+			description: `${url} returned ${status} with an empty body, so there is no way to tell whether anything was written — and on the imports observed this way, nothing was. This is how GetCourse refuses an import the plan does not include: it does not answer error_code 917, it answers nothing. Check the account's plan first, then that the key is allowed to write under Профиль → Настройки аккаунта → АПИ, and confirm in the account itself whether the object appeared before running the workflow again.`,
 		});
 	}
 

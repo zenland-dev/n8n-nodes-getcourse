@@ -123,7 +123,7 @@ const operation: INodeProperties = {
 			value: 'getCustomFields',
 			action: 'Get the custom fields of a user',
 			description:
-				'Дополнительные поля пользователя со значениями. They come back keyed by name and never by ID, so this list cannot be fed straight back into Update Custom Fields.',
+				'Дополнительные поля пользователя со значениями. The answer is keyed by field ID and carries the name beside each value, so it lists every field the account defines and not only the filled ones.',
 		},
 		{
 			name: 'Get Deals',
@@ -227,7 +227,7 @@ const operation: INodeProperties = {
 			value: 'updateCustomFields',
 			action: 'Update the custom fields of a user',
 			description:
-				'Изменить дополнительные поля пользователя по их числовым ID. The read side answers by name and never by ID, so the two halves have to be matched by hand.',
+				'Изменить дополнительные поля пользователя по их числовым ID. The field picker reads the list from the user named above, because this API has no account-wide listing of custom fields.',
 		},
 	],
 };

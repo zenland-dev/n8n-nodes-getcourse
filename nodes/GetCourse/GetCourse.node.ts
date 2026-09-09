@@ -31,7 +31,7 @@ export class GetCourse implements INodeType {
 		// community-nodes linter.
 		builderHint: {
 			searchHint:
-				"GetCourse has two unrelated APIs and this node is the newer one, the Tech API. It can READ and UPDATE a user, an order, an offer, a dialog, a HelpDesk ticket, a lesson answer or a webinar, one at a time — it cannot CREATE anything and cannot list users or orders in bulk, because the API has no method for either. Creating a user or an order, and any bulk read, is the GetCourse Legacy node. Most user operations take one of three identifiers — the numeric ID if you have it, otherwise the e-mail, otherwise the phone — and the node asks which one you mean rather than letting you send two. Custom fields are read by name and written by numeric ID, and no method in this API lists those IDs: the Legacy node's Custom Field resource is where they come from. Authentication needs two keys glued with an underscore, a developer key GetCourse issues to integrators and a school key the school itself hands out.",
+				"GetCourse has two unrelated APIs and this node is the newer one, the Tech API. It can READ and UPDATE a user, an order, an offer, a dialog, a HelpDesk ticket, a lesson answer or a webinar, one at a time — it cannot CREATE anything and cannot list users or orders in bulk, because the API has no method for either. Creating a user or an order, and any bulk read, is the GetCourse Legacy node. Most user operations take one of three identifiers — the numeric ID if you have it, otherwise the e-mail, otherwise the phone — and the node asks which one you mean rather than letting you send two. Custom fields are written by numeric ID, and this API has no account-wide listing of them: the field picker reads the account's whole set from the user or the order the operation already names, so that identifier has to be filled in first. All three nodes share one GetCourse API credential, but this one additionally needs its Developer Key filled in — the key GetCourse issues to integrators — because the Tech API is reached with that key and the school key joined by an underscore.",
 			relatedNodes: [
 				{
 					nodeType: 'n8n-nodes-getcourse.getCourseLegacy',
@@ -46,7 +46,7 @@ export class GetCourse implements INodeType {
 		},
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
-		credentials: [{ name: 'getCourseTechApi', required: true }],
+		credentials: [{ name: 'getCourseApi', required: true }],
 		properties: [resourceProperty, ...resourceProperties],
 	};
 

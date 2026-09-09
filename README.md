@@ -43,50 +43,52 @@ Requires n8n 2.x and Node 20.19 or newer.
 
 ## Credentials
 
-Both credentials address the account the same way. Pick **GetCourse Subdomain** and enter
-the part in front of the domain — `myschool` for `myschool.getcourse.ru` — or, if your
-account force-redirects that address to a domain of its own, pick **Custom Domain** and
-enter that domain. The API answers only on the domain the account actually serves, and a
-redirect is not followed: it would strip a POST body and hand the key to the other host.
+All three nodes share one credential, **GetCourse API**. It was two until 0.2.0 — see the
+[changelog](CHANGELOG.md) if you are upgrading.
 
-### GetCourse Account API — for the Legacy node
+**Account address.** Pick **GetCourse Subdomain** and enter the part in front of the domain —
+`myschool` for `myschool.getcourse.ru`. Pasting the whole address, or the whole URL, works
+too; everything from the first dot on is dropped and the **Domain** dropdown decides the
+rest. If your account force-redirects that address to a domain of its own, pick **Custom
+Domain** and enter that domain instead: the API answers only on the domain the account
+actually serves, and a redirect is not followed, because following one would strip a POST
+body and hand the key to the other host.
 
-One field: the account's **secret key**, from Профиль → Настройки аккаунта → АПИ. Generate
-one with write access if you intend to import; a read-only key is enough for exports and
-for the custom-field dictionary.
+**Secret Key** — the account key from Профиль → Настройки аккаунта → АПИ. This is the only
+key the **GetCourse Legacy** node needs. Generate one with write access if you intend to
+import; a read-only key is enough for exports and for the custom-field dictionary.
 
-An import the account is not entitled to make does not say so. It comes back as HTTP 200 with
-an empty body and creates nothing — no error code, no message. If you see «GetCourse answered
-nothing at all», check the account's plan first and the key's write permission second: a key
-that genuinely holds write access still fails this way on a plan without the Import API.
+**Developer Key** — issued to the integrator after
+[this form](https://getcourse.ru/issuedeveloperkey), and the same key for every school you
+integrate. The **GetCourse** node and the **Trigger** need it; leave it empty if you only
+import and export.
 
-**Export Requests per Hour** (default 45) is a throttle this node applies on your behalf.
-GetCourse allows an account 100 Export API requests per **two hours** in total, counting
-every status check, and going over answers 903 for every other integration on that account
-until the window clears. The default leaves room for a second workflow; lower it if the
-account has other integrations, raise it if this n8n is the only caller.
+**School API Key** — leave it empty. GetCourse documents it as a key the school issues
+separately from the Secret Key, but the Secret Key was accepted in its place on every account
+tried, so the field is a fallback for a school that really does hand out its own. The token
+sent is `Authorization: Bearer <developer key>_<school key or Secret Key>`; a 403 means one
+half is wrong, the two belong to different schools, or the school has not enabled that
+developer key.
+
+Nothing but the address is required, so you can fill in only the half you have. **Test** then
+checks that half: with a developer key it asks the Tech API, without one it asks the
+Import/Export API.
+
+### Two things worth knowing before you debug an import
 
 The Import/Export API is available on paid plans only, and a plan that does not include it
 does **not** announce itself with `error_code 917` the way the help page suggests. On a free
 account with a write-enabled key, exports, the group list and the field dictionary all work
 normally, while every import answers HTTP 200 with an empty body and writes nothing — no
 code, no message. The node reports that as «GetCourse answered nothing at all» rather than
-guessing. The Tech API is unaffected: the same account accepted Tech API writes with the
-same key.
+guessing. Check the account's plan first and the key's write permission second. The Tech API
+is unaffected: the same account accepted Tech API writes with the same key.
 
-### GetCourse Tech API — for the GetCourse node and the Trigger
-
-Two fields, because GetCourse issues the two halves to different people:
-
-- **Developer Key** — issued to the integrator after
-  [this form](https://getcourse.ru/issuedeveloperkey). The same key for every school you
-  integrate.
-- **School API Key** — handed out by the school itself, one per account. Not the same thing
-  as the account Secret Key above.
-
-The node joins them with an underscore and sends `Authorization: Bearer <developer>_<school>`,
-which is the documented format. A 403 means one half is wrong, they belong to different
-schools, or the school has not enabled access for that developer key.
+**Export Requests per Hour** (default 45) is a throttle this node applies on your behalf.
+GetCourse allows an account 100 Export API requests per **two hours** in total, counting
+every status check, and going over answers 903 for every other integration on that account
+until the window clears. The default leaves room for a second workflow; lower it if the
+account has other integrations, raise it if this n8n is the only caller.
 
 ## GetCourse node
 
@@ -107,9 +109,11 @@ users or orders at all.
 | **Webhook** (2) | Subscribe · Unsubscribe |
 
 Dropdowns read the live account wherever the API publishes a list: user groups, departments,
-personal managers, offers, cancellation reasons and webinars. Where it publishes none —
-lessons, surveys, products, diploma templates, custom fields — the field is a plain input and
-says so.
+personal managers, offers, cancellation reasons and webinars. Custom fields have a picker
+too, with one condition — it is read from the user or the order named above it, because this
+API has no account-wide listing of them, so fill the identifier in first. Where the API
+publishes nothing at all — lessons, surveys, products, diploma templates — the field is a
+plain input and says so.
 
 There is no listing of users or of orders anywhere in this API, which is why the node has no
 "Get Many Users": a user is reached by ID, e-mail, phone or messenger chat ID, an order by its
@@ -135,9 +139,15 @@ rather than letting you fill in two and leaving the server to choose:
 
 ### Custom fields
 
-The Tech API reads custom fields **by name** and writes them **by numeric ID**, and no
-method in it lists those IDs. Use the Legacy node's **Custom Field → Get Many** to look
-them up once; the ID is stable.
+The Tech API writes custom fields by numeric ID and has no method that lists the account's
+fields. **Get Custom Fields** is the way round it: it answers keyed by ID, carries the name
+beside each value, and returns every field the account defines rather than only the filled
+ones. That is what fills the picker under **Update Custom Fields**, which is why the picker
+needs the user or the order filled in first — the listing has to be read from one of them.
+
+Typing an ID by hand still works, and the Legacy node's **Custom Field → Get Many** lists the
+whole dictionary in one call if you would rather look it up there. The IDs are the same
+numbers in both APIs, and they are stable.
 
 ## GetCourse Legacy node
 

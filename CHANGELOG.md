@@ -9,6 +9,62 @@ more than the rest:
 in a minor release.** Those strings live inside other people's saved workflows, and changing
 one silently breaks the workflow and detaches its credentials. When such a rename becomes
 unavoidable it is a major version, and this file says exactly what to change and where.
+Below 1.0.0 that slot is the minor number, which is what semantic versioning reserves it for,
+and a release that renames or removes anything says **action required** in its heading.
+
+## [0.2.0] — 2026-09-09
+
+### Changed — action required
+
+- **The two credential types are now one.** `GetCourse Tech API` (`getCourseTechApi`) has been
+  removed and its two key fields have moved into `GetCourse API` (`getCourseApi`), which was
+  called `GetCourse Account API` before. Both APIs address the same account with the same four
+  address fields, and the school key the Tech API asks for is, on every account tried, the
+  account Secret Key the other credential already held — so filling all of it in twice bought
+  nothing.
+
+  **If you use the GetCourse node or the GetCourse Trigger**, open each of them after
+  upgrading, select or create a **GetCourse API** credential, and fill in the **Developer
+  Key** — n8n never hands a stored password back, so the keys have to be entered again. Leave
+  **School API Key** empty unless your school issued one separately from the Secret Key.
+  Workflows using only the GetCourse Legacy node are unaffected: that credential kept its
+  name and its fields.
+
+  Separating duties still works, and this is why both key fields are optional: a credential
+  holding only a developer and a school key drives the GetCourse node and can export nothing,
+  while one holding only the Secret Key drives the Legacy node.
+
+### Fixed
+
+- **The credential Test button.** On the Tech credential it refused with «This credential is
+  configured to prevent use within an HTTP Request node» — the pinned Allowed HTTP Request
+  Domains field, which on some n8n versions blocks the credential's own test as well as the
+  HTTP Request node. The credential no longer declares an `authenticate` block at all, so n8n
+  neither offers it in an HTTP Request node nor injects that field, and the transports attach
+  their own authentication.
+- **What a failed test says.** n8n reads a credential's `responseSuccessBody` rules only on a
+  successful response, so every rejection arrived as a bare HTTP status — `Forbidden`,
+  `Found`, `ENOTFOUND` — and the explanations written for them were unreachable. Both kinds of
+  rule are now present, and a rejected key, a wrong address and an account that redirects to
+  its own domain each say so.
+- **A pasted account address.** Typing or pasting `myschool.getcourse.ru`, or the whole URL,
+  into **Subdomain** silently became `myschoolgetcourseru` and failed to resolve. Everything
+  from the first dot on is now dropped, as it always should have been.
+- **An empty account address** made the test request `https://` and reported the single word
+  `ENOTFOUND`. It now names an address that cannot resolve, so the message says what is wrong.
+
+### Added
+
+- **A picker for custom fields in the GetCourse node.** `Update Custom Fields` asked for a
+  bare numeric field ID because the Tech API publishes no dictionary of them. It turns out
+  `Get Custom Fields` is one: it answers keyed by field ID, carries the name beside each
+  value, and lists every field the account defines rather than only the filled ones. The
+  picker reads it from the user or the order the operation already names, so fill that
+  identifier in first. Typing an ID by hand, or supplying one by expression, still works.
+
+  The two endpoints behind it answer different shapes — the user one an object keyed by field
+  ID, the order one a plain array — which is worth knowing if you read them yourself: the user
+  operation emits a single item carrying every field, the order operation one item per field.
 
 ## [0.1.0] — 2026-09-06
 
@@ -40,4 +96,5 @@ disagree, the code follows the service and says so in a comment at the point it 
 - Published from GitHub Actions with an npm provenance statement, which n8n has required of
   submitted nodes since 1 May 2026.
 
+[0.2.0]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.2.0
 [0.1.0]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.1.0
