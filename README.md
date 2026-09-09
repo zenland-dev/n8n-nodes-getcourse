@@ -43,7 +43,7 @@ Requires n8n 2.x and Node 20.19 or newer.
 
 ## Credentials
 
-All three nodes share one credential, **GetCourse API**. There were two until 0.3.0 — see the
+All three nodes share one credential, **GetCourse API**. There were two until 0.2.1 — see the
 [changelog](CHANGELOG.md) if you are upgrading.
 
 **Account address.** Pick **GetCourse Subdomain** and enter the part in front of the domain —

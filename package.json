@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-getcourse",
-	"version": "0.3.0",
+	"version": "0.2.1",
 	"description": "GetCourse nodes for n8n: the Tech API v1, the legacy Import/Export API and a webhook trigger",
 	"keywords": [
 		"n8n-community-node-package",

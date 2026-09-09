@@ -12,7 +12,7 @@ unavoidable it is a major version, and this file says exactly what to change and
 Below 1.0.0 that slot is the minor number, which is what semantic versioning reserves it for,
 and a release that renames or removes anything says **action required** in its heading.
 
-## [0.3.0] — 2026-09-10
+## [0.2.1] — 2026-09-10
 
 ### Changed — action required
 
@@ -29,14 +29,18 @@ and a release that renames or removes anything says **action required** in its h
   you had as the Secret Key. Credentials of type `getCourseTechApi` created in 0.1.0 keep
   working and only need that one field filled in to drive the Legacy node too.
 
+  This ships as a patch rather than a minor release, against the rule at the top of this
+  file, because it withdraws a change that stood for less than a day: relative to 0.1.0 it
+  restores the credential type 0.2.0 removed.
+
 ## [0.2.0] — 2026-09-09
 
-Superseded by 0.3.0 within a day: the credential merge went the wrong way round. Do not use
-this version — 0.3.0 carries the same fixes.
+Superseded by 0.2.1 within a day: the credential merge went the wrong way round. Do not use
+this version — 0.2.1 carries the same fixes.
 
 ### Changed — action required
 
-- **The two credential types are now one.** Merged the wrong way round; see 0.3.0. Both APIs address the same account with the same four
+- **The two credential types are now one.** Merged the wrong way round; see 0.2.1. Both APIs address the same account with the same four
   address fields, and the school key the Tech API asks for is, on every account tried, the
   account Secret Key the other credential already held — so filling all of it in twice bought
   nothing.
@@ -114,6 +118,6 @@ disagree, the code follows the service and says so in a comment at the point it 
 - Published from GitHub Actions with an npm provenance statement, which n8n has required of
   submitted nodes since 1 May 2026.
 
-[0.3.0]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.3.0
+[0.2.1]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.2.1
 [0.2.0]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.2.0
 [0.1.0]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.1.0
