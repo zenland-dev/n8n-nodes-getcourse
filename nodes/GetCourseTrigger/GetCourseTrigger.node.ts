@@ -58,7 +58,7 @@ export class GetCourseTrigger implements INodeType {
 		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
-				name: 'getCourseApi',
+				name: 'getCourseTechApi',
 				required: true,
 				displayOptions: { show: { source: ['techApi'] } },
 			},

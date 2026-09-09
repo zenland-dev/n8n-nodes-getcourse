@@ -12,13 +12,31 @@ unavoidable it is a major version, and this file says exactly what to change and
 Below 1.0.0 that slot is the minor number, which is what semantic versioning reserves it for,
 and a release that renames or removes anything says **action required** in its heading.
 
-## [0.2.0] — 2026-09-09
+## [0.3.0] — 2026-09-10
 
 ### Changed — action required
 
-- **The two credential types are now one.** `GetCourse Tech API` (`getCourseTechApi`) has been
-  removed and its two key fields have moved into `GetCourse API` (`getCourseApi`), which was
-  called `GetCourse Account API` before. Both APIs address the same account with the same four
+- **One credential type, and it is the Tech API one.** 0.2.0 merged the two the wrong way
+  round: it kept `getCourseApi` and carried the Tech keys into it, leaving three key fields
+  where there are only two keys. `getCourseApi` is now gone and `getCourseTechApi` — shown as
+  **GetCourse API** — is the only credential, carrying exactly the school key and the
+  developer key. The GetCourse Legacy node uses the school key as its own: GetCourse
+  documents «ключ АПИ школы» and the secret key under Профиль → Настройки аккаунта → АПИ
+  separately, and on every account tried they are one value.
+
+  **If you are on 0.1.0 or 0.2.0 and use the GetCourse Legacy node**, open it, select or
+  create a **GetCourse API** credential and fill in the **School API Key** — the same value
+  you had as the Secret Key. Credentials of type `getCourseTechApi` created in 0.1.0 keep
+  working and only need that one field filled in to drive the Legacy node too.
+
+## [0.2.0] — 2026-09-09
+
+Superseded by 0.3.0 within a day: the credential merge went the wrong way round. Do not use
+this version — 0.3.0 carries the same fixes.
+
+### Changed — action required
+
+- **The two credential types are now one.** Merged the wrong way round; see 0.3.0. Both APIs address the same account with the same four
   address fields, and the school key the Tech API asks for is, on every account tried, the
   account Secret Key the other credential already held — so filling all of it in twice bought
   nothing.
@@ -96,5 +114,6 @@ disagree, the code follows the service and says so in a comment at the point it 
 - Published from GitHub Actions with an npm provenance statement, which n8n has required of
   submitted nodes since 1 May 2026.
 
+[0.3.0]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.3.0
 [0.2.0]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.2.0
 [0.1.0]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.1.0

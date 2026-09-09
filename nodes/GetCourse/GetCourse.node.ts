@@ -46,7 +46,7 @@ export class GetCourse implements INodeType {
 		},
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
-		credentials: [{ name: 'getCourseApi', required: true }],
+		credentials: [{ name: 'getCourseTechApi', required: true }],
 		properties: [resourceProperty, ...resourceProperties],
 	};
 

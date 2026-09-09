@@ -18,7 +18,7 @@ import { envelopeError, isExportPending, isTruthyFlag, toLegacyApiError } from '
 /** Every context this node makes API calls from. */
 export type LegacyContext = IExecuteFunctions | ILoadOptionsFunctions | IPollFunctions;
 
-export const CREDENTIAL_NAME = 'getCourseApi';
+export const CREDENTIAL_NAME = 'getCourseTechApi';
 
 /** The window this node counts export requests in. */
 const EXPORT_WINDOW_MS = 3_600_000;
@@ -42,7 +42,8 @@ const MAX_DROPDOWN_WAIT_MS = 10_000;
 
 interface AccountConnection {
 	baseUrl: string;
-	secretKey: string;
+	/** The account key. The credential calls it the school key; this API calls it `key`. */
+	schoolKey: string;
 	exportRequestsPerHour: number;
 	credentialId: string;
 }
@@ -64,7 +65,7 @@ async function resolveAccount(this: LegacyContext): Promise<AccountConnection> {
 
 	return {
 		baseUrl,
-		secretKey: String(credentials.secretKey ?? ''),
+		schoolKey: String(credentials.schoolApiKey ?? ''),
 		exportRequestsPerHour: Number(credentials.exportRequestsPerHour) || 45,
 		credentialId: this.getNode().credentials?.[CREDENTIAL_NAME]?.id ?? 'unbound',
 	};
@@ -268,7 +269,7 @@ export async function importRequest(
 
 	const body = [
 		`action=${encodeURIComponent(action)}`,
-		`key=${encodeURIComponent(account.secretKey)}`,
+		`key=${encodeURIComponent(account.schoolKey)}`,
 		`params=${encodeURIComponent(encoded)}`,
 	].join('&');
 
@@ -378,7 +379,7 @@ export async function exportRequest(
 			method: 'GET',
 			baseURL: account.baseUrl,
 			url: endpoint,
-			qs: { key: account.secretKey, ...flattenQuery(qs) },
+			qs: { key: account.schoolKey, ...flattenQuery(qs) },
 			headers: { Accept: 'application/json' },
 		},
 		true,
@@ -401,7 +402,7 @@ export async function fieldsRequest(this: LegacyContext): Promise<LegacyEnvelope
 	const account = await resolveAccount.call(this);
 
 	return await cached(`legacy|fields|${account.credentialId}`, async () => {
-		const body = ['action=get', `key=${encodeURIComponent(account.secretKey)}`].join('&');
+		const body = ['action=get', `key=${encodeURIComponent(account.schoolKey)}`].join('&');
 
 		const envelope = await send.call(
 			this,

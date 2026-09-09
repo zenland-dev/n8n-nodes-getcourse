@@ -91,7 +91,7 @@ function describeCode(code: number | undefined, text: string): string | undefine
 		text.includes('отсутсвует параметр key') ||
 		text.includes('отсутствует параметр key')
 	) {
-		return 'The request reached GetCourse without a key. Check that the credential has its Secret Key filled in.';
+		return 'The request reached GetCourse without a key. Check that the credential has its School API Key filled in.';
 	}
 
 	if (code === 917 || text.includes('Функционал недоступен')) {

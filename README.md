@@ -43,7 +43,7 @@ Requires n8n 2.x and Node 20.19 or newer.
 
 ## Credentials
 
-All three nodes share one credential, **GetCourse API**. It was two until 0.2.0 — see the
+All three nodes share one credential, **GetCourse API**. There were two until 0.3.0 — see the
 [changelog](CHANGELOG.md) if you are upgrading.
 
 **Account address.** Pick **GetCourse Subdomain** and enter the part in front of the domain —
@@ -54,25 +54,21 @@ Domain** and enter that domain instead: the API answers only on the domain the a
 actually serves, and a redirect is not followed, because following one would strip a POST
 body and hand the key to the other host.
 
-**Secret Key** — the account key from Профиль → Настройки аккаунта → АПИ. This is the only
-key the **GetCourse Legacy** node needs. Generate one with write access if you intend to
-import; a read-only key is enough for exports and for the custom-field dictionary.
+**School API Key** — the account's own key, one per school. GetCourse calls it «ключ АПИ
+школы» for the Tech API and shows the same value as the secret key under Профиль → Настройки
+аккаунта → АПИ, which is what the Import/Export API takes. Every node here uses it. A
+read-only key is enough for reading; importing through the Legacy node needs one with write
+access.
 
-**Developer Key** — issued to the integrator after
-[this form](https://getcourse.ru/issuedeveloperkey), and the same key for every school you
-integrate. The **GetCourse** node and the **Trigger** need it; leave it empty if you only
-import and export.
-
-**School API Key** — leave it empty. GetCourse documents it as a key the school issues
-separately from the Secret Key, but the Secret Key was accepted in its place on every account
-tried, so the field is a fallback for a school that really does hand out its own. The token
-sent is `Authorization: Bearer <developer key>_<school key or Secret Key>`; a 403 means one
-half is wrong, the two belong to different schools, or the school has not enabled that
+**Developer Key** — needed by the **GetCourse** node and the **Trigger**, and by nothing else.
+Issued to the integrator after [this form](https://getcourse.ru/issuedeveloperkey), and it is
+the same key for every school you integrate. Leave it empty if you only import and export.
+The Tech API is reached with `Authorization: Bearer <developer key>_<school key>`; a 403 means
+one half is wrong, the two belong to different schools, or the school has not enabled that
 developer key.
 
-Nothing but the address is required, so you can fill in only the half you have. **Test** then
-checks that half: with a developer key it asks the Tech API, without one it asks the
-Import/Export API.
+**Test** checks the half you filled in: with a developer key it asks the Tech API, without one
+it asks the Import/Export API.
 
 ### Two things worth knowing before you debug an import
 

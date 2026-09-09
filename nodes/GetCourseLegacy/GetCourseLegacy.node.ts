@@ -31,7 +31,7 @@ export class GetCourseLegacy implements INodeType {
 		// rejected here by the community-nodes linter.
 		builderHint: {
 			searchHint:
-				'GetCourse has two separate APIs and this node is the older one — the account Import/Export API, keyed by the secret key under Профиль → Настройки аккаунта → АПИ. It is the only way to CREATE a user or an order, and the only way to read them in bulk; the GetCourse node covers the newer Tech API, which can read and update single objects but create nothing. Bulk reads are asynchronous: Export and Wait does the whole job in one node, while Start, Check Status and Get Result split it across a chain with an n8n Wait node in between. The account gets 100 export requests per two hours in total and every status check counts, so this is a nightly-report tool, not a polling trigger — for reacting to events, point a GetCourse process with the «Вызвать URL» operation at a GetCourse Trigger node.',
+				'GetCourse has two separate APIs and this node is the older one — the account Import/Export API, keyed by the School API Key on the shared GetCourse API credential — the same value GetCourse shows as the secret key under Профиль → Настройки аккаунта → АПИ. It is the only way to CREATE a user or an order, and the only way to read them in bulk; the GetCourse node covers the newer Tech API, which can read and update single objects but create nothing. Bulk reads are asynchronous: Export and Wait does the whole job in one node, while Start, Check Status and Get Result split it across a chain with an n8n Wait node in between. The account gets 100 export requests per two hours in total and every status check counts, so this is a nightly-report tool, not a polling trigger — for reacting to events, point a GetCourse process with the «Вызвать URL» operation at a GetCourse Trigger node.',
 			relatedNodes: [
 				{
 					nodeType: 'n8n-nodes-getcourse.getCourse',
@@ -46,7 +46,7 @@ export class GetCourseLegacy implements INodeType {
 		},
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
-		credentials: [{ name: 'getCourseApi', required: true }],
+		credentials: [{ name: 'getCourseTechApi', required: true }],
 		properties: [resourceProperty, ...resourceProperties],
 	};
 

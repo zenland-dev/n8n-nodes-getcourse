@@ -25,7 +25,7 @@ export type GetCourseContext =
 	| IWebhookFunctions
 	| IPollFunctions;
 
-export const CREDENTIAL_NAME = 'getCourseApi';
+export const CREDENTIAL_NAME = 'getCourseTechApi';
 
 /** Everything under the Tech API lives below this prefix. */
 const API_PREFIX = '/pl/api/v1';
@@ -79,14 +79,11 @@ async function resolveAccount(this: GetCourseContext): Promise<AccountConnection
 	if (developerKey === '') {
 		throw new NodeOperationError(this.getNode(), 'The GetCourse credential has no developer key', {
 			description:
-				'The Tech API is reached with two keys joined by an underscore, and only one of them is in this credential. Open it and fill in the Developer Key — the one issued at getcourse.ru/issuedeveloperkey. Without it this node cannot make a request; the GetCourse Legacy node works on the Secret Key alone.',
+				'The Tech API is reached with two keys joined by an underscore, and only the school key is in this credential. Open it and fill in the Developer Key — the one issued at getcourse.ru/issuedeveloperkey. Without it this node cannot make a request; the GetCourse Legacy node works on the school key alone.',
 		});
 	}
 
-	// The school key is the account Secret Key on every account tried, so the
-	// separate field is a fallback rather than the norm — see the credential.
-	const schoolKey =
-		String(credentials.schoolApiKey ?? '').trim() || String(credentials.secretKey ?? '').trim();
+	const schoolKey = String(credentials.schoolApiKey ?? '').trim();
 
 	return {
 		baseUrl,
