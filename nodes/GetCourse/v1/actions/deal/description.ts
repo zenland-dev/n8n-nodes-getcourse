@@ -71,7 +71,7 @@ const operation: INodeProperties = {
 			value: 'getCalls',
 			action: 'Get the calls of an order',
 			description:
-				'Звонки по заказу. Each record carries its transcription in a comment field, which is empty on an account that does not transcribe.',
+				'Звонки по заказу. Each record carries its transcription in a comment field, which stays empty unless the account transcribes its calls.',
 		},
 		{
 			name: 'Get Cancel Reasons',
@@ -218,7 +218,7 @@ const updateFields: INodeProperties = {
 			name: 'tags',
 			type: 'string',
 			default: '',
-			placeholder: 'VIP, повтор',
+			placeholder: 'тег1, тег2',
 			description:
 				"Теги заказа, comma-separated. This list REPLACES the order's tags rather than adding to them — tested on a live account, where setting one tag and then another left only the second — so include the tags you want to keep. GetCourse does clear the list when sent an empty one, but this field cannot do that: a blank value means «leave the tags alone», which is what an unfilled optional field has to mean.",
 		},

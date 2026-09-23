@@ -97,7 +97,7 @@ const dataset: INodeProperties = {
 		{
 			name: 'Orders',
 			value: 'deals',
-			description: 'Заказы аккаунта, about seventy columns wide',
+			description: 'Заказы аккаунта, custom order fields included',
 		},
 		{
 			name: 'Payments',
@@ -128,7 +128,7 @@ const groupProperty: INodeProperties = {
 
 const filterNotice: INodeProperties = {
 	displayName:
-		'Нужен хотя бы один фильтр — без него GetCourse отвечает «Должен быть передан хотя бы один фильтр». Filters are combined with AND, and a date is sent as a whole day worked out in the WORKFLOW timezone, which is not necessarily the one the account keeps: a school in another zone can see the boundary fall a few hours out. A range wider than a few weeks can produce a response of tens of megabytes, so split long periods into several runs.',
+		'Нужен хотя бы один фильтр — без него GetCourse отвечает «Должен быть передан хотя бы один фильтр». Filters are combined with AND, and a date is sent as a whole day worked out in the WORKFLOW timezone, which is not necessarily the one the account keeps: a school in another zone can see the boundary fall a few hours out. A long date range on a busy account can produce a very large response, so split long periods into several runs.',
 	name: 'exportFilterNotice',
 	type: 'notice',
 	default: '',
@@ -519,7 +519,7 @@ const outputOptions: INodeProperties = {
 				},
 			],
 			description:
-				'Как называть поля. Most GetCourse columns are named in Russian, which is awkward to reference in an expression, though some arrive in Latin already — utm_source, VK-ID — and transliteration leaves those alone. It trades exactness for a key you can type.',
+				'Как называть поля. Most GetCourse columns are named in Russian, which is awkward to reference in an expression, though some arrive in Latin already, utm_source for one, and transliteration leaves those alone. It trades exactness for a key you can type.',
 		},
 		{
 			displayName: 'Output',

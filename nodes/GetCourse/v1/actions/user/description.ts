@@ -253,7 +253,7 @@ const chatId: INodeProperties = {
 	type: 'string',
 	default: '',
 	required: true,
-	placeholder: '112345323',
+	placeholder: '123456789',
 	displayOptions: showFor(['getByChatId', 'getByTelegramChatId']),
 	description:
 		'ID чата в мессенджере — the number the bot sees, not the handle. A user reached through several bots answers to any of their chat IDs.',
@@ -306,7 +306,7 @@ const updateFields: INodeProperties = {
 			name: 'birthday',
 			type: 'string',
 			default: '',
-			placeholder: '1991-01-12',
+			placeholder: '1990-01-01',
 			description:
 				'Дата рождения в виде YYYY-MM-DD. A full timestamp is accepted too and is reduced to its date in the workflow timezone.',
 		},

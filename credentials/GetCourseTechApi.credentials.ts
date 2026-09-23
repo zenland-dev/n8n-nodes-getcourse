@@ -122,8 +122,8 @@ const TEST_RULES: ICredentialTestRequest['rules'] = [
  * but it serves the legacy Import/Export API too, and that is not a compromise:
  * the school key below is the account key both of them take. GetCourse documents
  * them as two things — «ключ АПИ школы» for the Tech API, the secret key under
- * Профиль → Настройки аккаунта → АПИ for the older one — and on every account
- * tried they are one value. So there is one field for it, not two.
+ * Профиль → Настройки аккаунта → АПИ for the older one — and in practice they
+ * are one value. So there is one field for it, not two.
  *
  * The GetCourse Legacy node exists only because the Tech API cannot create a
  * user or read anything in bulk. It is a second node, not a second account and

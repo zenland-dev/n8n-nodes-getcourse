@@ -64,8 +64,8 @@ export function errorTextOf(envelope: LegacyEnvelope): string {
  * page's troubleshooting list; 901, 904, 905, 908, 909, 913, 914 and 918 were
  * read off a live account, each one reproduced deliberately. 917 is the only
  * code below still taken on trust from clients that evidently run against the
- * service. The message text is localised — an account on getcourse.io answers
- * 901 with "Access denied" — so the code is matched first and the text only as a
+ * service. The message text is localised — getcourse.io answers 901 with "Access
+ * denied" — so the code is matched first and the text only as a
  * fallback, and every branch that has a code carries one.
  */
 function describeCode(code: number | undefined, text: string): string | undefined {

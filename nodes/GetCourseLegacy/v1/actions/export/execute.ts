@@ -187,8 +187,8 @@ function buildFilters(this: IExecuteFunctions, dataset: string, itemIndex: numbe
  *
  * GetCourse answers one with «Должен быть передан хотя бы один фильтр», and an
  * account-wide export would in any case be the most expensive request the node
- * can make — for a school with years of history it is tens of megabytes and the
- * best part of the two-hour budget.
+ * can make — for a school with a long history it can be very large and cost a
+ * good share of the two-hour budget.
  */
 function assertFiltered(this: IExecuteFunctions, query: IDataObject, itemIndex: number): void {
 	if (Object.keys(query).length > 0) return;
@@ -377,8 +377,8 @@ async function run(this: IExecuteFunctions, itemIndex: number): Promise<INodeExe
 			// The job is already running on GetCourse's side and has already cost the
 			// account a slot from its two-hour budget. Failing without naming the export
 			// ID would strand it: there is no way to list exports, so an ID nobody
-			// recorded can never be collected. This is not hypothetical — running out of
-			// budget part-way through the poll loop is exactly how it happens.
+			// recorded can never be collected, and running out of budget part-way through
+			// the poll loop is exactly how that happens.
 			throw new NodeOperationError(
 				this.getNode(),
 				`Export ${exportId} was started but could not be collected: ${

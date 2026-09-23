@@ -216,11 +216,11 @@ async function accountFieldOptions(
  * Picks the steadiest person in the personal-manager list to ask about fields.
  *
  * The list is whoever the school configured as a personal manager, not its whole
- * staff, so what it contains varies: one account answered 121 people — 74 with
- * `type: admin`, 45 plain users, 2 teachers — and another answered a single
- * teacher, its account owner nowhere in it. Any of them gives the same field
- * list, so the choice only matters for how likely the record is to still be
- * there tomorrow: an admin outlives a customer who was made a manager once.
+ * staff, so what it contains varies: admins, teachers and plain users in any
+ * mix, sometimes a single person, and not necessarily the account owner. Any of
+ * them gives the same field list, so the choice only matters for how likely the
+ * record is to still be there tomorrow: an admin outlives a customer who was
+ * made a manager once.
  *
  * Deleted records are skipped outright — GetCourse keeps them with
  * `deleted: true`, and asking about one wastes the free route and falls through
@@ -244,9 +244,8 @@ function sampleUserId(managers: IDataObject[]): string {
  * person, and there is no user listing anywhere in this API. `get-personal-managers`
  * is the way round that: it answers full user records and takes no parameters,
  * so the first manager serves as a sample. Which person is asked does not matter,
- * because the answer describes the account rather than them; that was checked on
- * two accounts, where the manager route returned 13 and 106 fields against 13 and
- * 106 user-context descriptors in the legacy dictionary.
+ * because the answer describes the account rather than them; that was checked
+ * field for field against the user-context descriptors in the legacy dictionary.
  *
  * Worth the two extra round trips because both are on the Tech API, which has no
  * published quota, while the legacy dictionary spends one of the hundred Export

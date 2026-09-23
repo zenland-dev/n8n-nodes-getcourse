@@ -18,16 +18,15 @@ import type { IDataObject } from 'n8n-workflow';
  * {@link unwrapDelivery}, which is what makes `$json.deal.status` work instead
  * of `$json.json.deal.status`.
  *
- * Two traps inside that payload, both observed across four consecutive
- * deliveries of the same order:
+ * Two traps inside that payload, both observed across several deliveries of the
+ * same order:
  *
  *  * **`ts` is not the event time.** It is the order's `createdAt`, identical in
  *    every delivery however far apart the events were. Deduplicating or ordering
  *    on it collapses distinct events into one.
  *  * **`ts` is not UTC either, despite the `Z`.** It is the account's local time
- *    with a `Z` glued on: `10:52:21Z` alongside a `ts64` of 1788681141, which is
- *    `07:52:21Z` — the account's three-hour offset exactly. `ts64` is the honest
- *    one.
+ *    with a `Z` glued on, so it differs from `ts64` by exactly the account's
+ *    UTC offset. `ts64` is the honest one.
  *
  * The families matter because they carry no common discriminator:
  *

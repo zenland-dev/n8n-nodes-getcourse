@@ -136,19 +136,18 @@ function assertEnvelope(
 		});
 	}
 
-	// Observed on a live account: every `action=add` and `action=update` against
-	// /pl/api/users came back like this and created nothing, while /pl/api/deals
-	// on the same account and the same key answered a normal envelope. The key
-	// was confirmed by its owner to hold write permission, and an unknown action
-	// on the same endpoint still answered «Действие запрещено» as JSON, so the
-	// request is understood and then dropped rather than refused. What the
-	// account had in common with that is its plan: the same key drove Tech API
-	// writes on the same school without complaint, so it is the legacy Import
-	// API specifically that the plan withholds — silently, and without the 917
-	// the help page promises for a disabled API.
+	// How GetCourse refuses an import the plan does not include: every
+	// `action=add` and `action=update` against /pl/api/users comes back like this
+	// and creates nothing, while /pl/api/deals with the same key can still answer
+	// a normal envelope, and an unknown action on the same endpoint still answers
+	// «Действие запрещено» as JSON — so the request is understood and then
+	// dropped rather than refused. The Tech API is not subject to the same
+	// restriction: it is the legacy Import API specifically that the plan
+	// withholds — silently, and without the 917 the help page promises for a
+	// disabled API.
 	if (text === '') {
 		throw new NodeOperationError(this.getNode(), 'GetCourse answered nothing at all', {
-			description: `${url} returned ${status} with an empty body, so there is no way to tell whether anything was written — and on the imports observed this way, nothing was. This is how GetCourse refuses an import the plan does not include: it does not answer error_code 917, it answers nothing. Check the account's plan first, then that the key is allowed to write under Профиль → Настройки аккаунта → АПИ, and confirm in the account itself whether the object appeared before running the workflow again.`,
+			description: `${url} returned ${status} with an empty body, so there is no way to tell whether anything was written — and an import refused this way writes nothing. This is how GetCourse refuses an import the plan does not include: it does not answer error_code 917, it answers nothing. Check the account's plan first, then that the key is allowed to write under Профиль → Настройки аккаунта → АПИ, and confirm in the account itself whether the object appeared before running the workflow again.`,
 		});
 	}
 

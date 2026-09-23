@@ -73,12 +73,12 @@ it asks the Import/Export API.
 ### Two things worth knowing before you debug an import
 
 The Import/Export API is available on paid plans only, and a plan that does not include it
-does **not** announce itself with `error_code 917` the way the help page suggests. On a free
-account with a write-enabled key, exports, the group list and the field dictionary all work
-normally, while every import answers HTTP 200 with an empty body and writes nothing — no
-code, no message. The node reports that as «GetCourse answered nothing at all» rather than
-guessing. Check the account's plan first and the key's write permission second. The Tech API
-is unaffected: the same account accepted Tech API writes with the same key.
+does **not** announce itself with `error_code 917` the way the help page suggests. On such a
+plan exports, the group list and the field dictionary can all work normally, while every
+import answers HTTP 200 with an empty body and writes nothing — no code, no message. The
+node reports that as «GetCourse answered nothing at all» rather than guessing. Check the
+account's plan first and the key's write permission second. The Tech API is not subject to
+this restriction.
 
 **Export Requests per Hour** (default 45) is a throttle this node applies on your behalf.
 GetCourse allows an account 100 Export API requests per **two hours** in total, counting
@@ -262,7 +262,7 @@ its cost: checking and fetching are the same request underneath, so a Check-then
 spends one request more per loop than *Get Result* alone.
 
 An export needs **at least one filter** — GetCourse refuses to build a file without one,
-and an account-wide export of a school with years of history is tens of megabytes. Split
+and an account-wide export of a school with a long history can be very large. Split
 long periods into several runs.
 
 Whenever *Export and Wait* gives up or fails part-way through — the file is still building,
@@ -290,7 +290,7 @@ The node zips them, one output item per row. The column set is account-specific 
 custom field is spliced into the middle of the row — so nothing may be read by position.
 
 Column titles are mostly Russian, with spaces and punctuation: `$json["Создан"]`,
-`$json["ID партнера"]`. A few arrive in Latin — `utm_source`, `VK-ID`, and the five
+`$json["ID партнера"]`. A few arrive in Latin — `utm_source` and the five
 `gc_system_user_utm_*` fields GetCourse adds to every account. Set **Options → Column
 Names → Transliterated** to get `sozdan` instead, at the cost of exactness. An export whose
 filter matches nothing is not an error: it returns the full column list and no rows, so the
@@ -309,9 +309,9 @@ The export budget is enforced by this package across the whole n8n process, per 
 host, so several workflows hitting one account add up to one budget rather than racing.
 
 The one-export-at-a-time rule deserves planning for rather than reacting to. It is
-account-wide, so anything else exporting from the same school holds it — on a busy account
-with other integrations, a start refused with «Уже запущен один экспорт» is the normal case,
-not the rare one. Give the Export node a single item, or loop items through a Wait node, and
+account-wide, so anything else exporting from the same school holds it — on an account
+where other integrations export too, a start refused with «Уже запущен один экспорт» can be
+routine rather than rare. Give the Export node a single item, or loop items through a Wait node, and
 turn on **Settings → On Error → Continue** so a refusal does not discard the export IDs
 earlier items already returned.
 
@@ -324,23 +324,22 @@ Observed in the wild rather than documented. The nodes do not silently correct a
 - `deal.isPayed` in a webhook is sometimes `0`/`1` and sometimes a boolean — and is `0` in a
   `dealPaid` event even for a priced order that was just marked paid, not only for a free one.
 - **`ts` is not the event's time.** It is the order's `createdAt`, and it is identical in
-  every delivery about that order however far apart the events were — four events minutes
-  apart all carried one `ts`. Do not deduplicate or order on it.
+  every delivery about that order however far apart the events were. Do not deduplicate or
+  order on it.
 - **`ts` is not UTC either, despite ending in `Z`.** It is the account's local time with a
-  `Z` appended: an account three hours ahead sent `10:52:21Z` with a `ts64` of `1788681141`,
-  which is `07:52:21Z`. Use `ts64` when the real instant matters.
+  `Z` appended, so it is off from the real instant by the account's own UTC offset. Use
+  `ts64` when the real instant matters.
 - `deal.status` takes the literal string `"false"`, which is GetCourse's «Ложный» status.
 - `deal.payedValue` can be fractional and **less** than `cost` while the status is `payed`.
-- `answer.id` arrives as a string with single quotes inside it: `"'501283094'"`.
+- `answer.id` arrives as a string with single quotes inside it: `"'12345'"`.
 - `comment.files` is a **string containing JSON** and needs parsing.
 - `additional_fields[].required` is sometimes a boolean and sometimes the string `"1"`.
 - A paid order fires **both** `dealPaid` and `dealStatusChanged` — confirmed on a live
   account, as two separate deliveries whose bodies differ in `eventType` and nothing else.
   Deduplicate if you act on both.
 - Deliveries carry **no signature and no authentication header of any kind**, and they arrive
-  from more than one address — two different source IPs across four consecutive events — so
-  neither a shared secret nor an IP allowlist is available. The secrecy of the URL is the
-  only thing protecting a subscription.
+  from more than one address, so neither a shared secret nor an IP allowlist is available.
+  The secrecy of the URL is the only thing protecting a subscription.
 - Export cells are always strings, dates as `YYYY-MM-DD HH:MM:SS` in the account's timezone.
 
 ## Compatibility

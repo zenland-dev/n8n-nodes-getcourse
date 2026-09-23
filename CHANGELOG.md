@@ -12,6 +12,15 @@ unavoidable it is a major version, and this file says exactly what to change and
 Below 1.0.0 that slot is the minor number, which is what semantic versioning reserves it for,
 and a release that renames or removes anything says **action required** in its heading.
 
+## [0.2.3] — 2026-09-23
+
+### Changed
+
+- **Examples and notes no longer carry concrete counts, timestamps or identifiers.** A webhook
+  timestamp, a lesson-answer ID, a birthday and a Telegram chat ID are now plain placeholders,
+  and the notes on personal managers, export sizes and webhook deliveries describe the
+  behaviour without figures. No operation, field or default changed.
+
 ## [0.2.2] — 2026-09-10
 
 ### Fixed
@@ -30,12 +39,11 @@ and a release that renames or removes anything says **action required** in its h
   where nothing is metered: `get-personal-managers` takes no parameters and answers full user
   records, and any one of them serves as the sample `get-custom-fields` insists on naming.
   Which person is asked makes no difference — the answer describes the account, not them,
-  which was checked on two accounts against the dictionary field for field. Deleted records
-  are skipped and an `admin` is preferred, because that list is whoever the school configured
-  as a personal manager rather than its whole staff: one account answered 121 people, 74 of
-  them admins, and another a single teacher with the account owner nowhere in it. An account
-  with no personal managers at all, or a credential without a developer key, falls back to the
-  dictionary.
+  which was checked against the dictionary field for field. Deleted records are skipped and
+  an `admin` is preferred, because that list is whoever the school configured as a personal
+  manager rather than its whole staff: it can mix admins, teachers and plain users, hold a
+  single person, and leave out the account owner. An account with no personal managers at
+  all, or a credential without a developer key, falls back to the dictionary.
 
   **Order fields still use the dictionary**, because there is no way to obtain a sample order
   without one. That call is now remembered for two minutes rather than one, which turns a
@@ -54,7 +62,7 @@ and a release that renames or removes anything says **action required** in its h
   **GetCourse API** — is the only credential, carrying exactly the school key and the
   developer key. The GetCourse Legacy node uses the school key as its own: GetCourse
   documents «ключ АПИ школы» and the secret key under Профиль → Настройки аккаунта → АПИ
-  separately, and on every account tried they are one value.
+  separately, and in practice they are one value.
 
   **If you are on 0.1.0 or 0.2.0 and use the GetCourse Legacy node**, open it, select or
   create a **GetCourse API** credential and fill in the **School API Key** — the same value
@@ -73,7 +81,7 @@ this version — 0.2.1 carries the same fixes.
 ### Changed — action required
 
 - **The two credential types are now one.** Merged the wrong way round; see 0.2.1. Both APIs address the same account with the same four
-  address fields, and the school key the Tech API asks for is, on every account tried, the
+  address fields, and the school key the Tech API asks for is, in practice, the
   account Secret Key the other credential already held — so filling all of it in twice bought
   nothing.
 
@@ -123,7 +131,7 @@ this version — 0.2.1 carries the same fixes.
 ## [0.1.0] — 2026-09-06
 
 First public release. The package was written against GetCourse's own documentation and
-then reconciled against two live accounts, so where the documentation and the service
+then reconciled against the live service, so where the documentation and the service
 disagree, the code follows the service and says so in a comment at the point it matters.
 
 ### Added

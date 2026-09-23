@@ -4,8 +4,8 @@
  * Export filters take `YYYY-MM-DD`, deal dates take `YYYY-MM-DD HH:MM:SS`, and
  * both are read in the account's own timezone. n8n hands date inputs over as ISO
  * instants, so a conversion is unavoidable — and it has to happen in a named
- * timezone, otherwise `2026-03-01T00:30:00+03:00` becomes the 28th of February
- * for a Moscow school.
+ * timezone, otherwise `2026-03-01T00:30:00+05:00` becomes the 28th of February
+ * for a school at UTC+5.
  *
  * The timezone used is the workflow's, which is what the person building the
  * workflow sees in the n8n interface. When the account sits in another zone the
