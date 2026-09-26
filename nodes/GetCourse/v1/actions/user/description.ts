@@ -11,12 +11,14 @@ const showFor = (operations: string[]): INodeProperties['displayOptions'] => ({
 });
 
 /**
- * Everything except three operations names the person with the same trio.
+ * Everything except five operations names the person with the same trio.
  *
  * `getByChatId` and `getByTelegramChatId` look a user up from the other end — by
- * a messenger conversation rather than by anything on the user card — and
- * `addComment` is one of the two endpoints in the whole API that insist on a
- * bare numeric ID, so none of the three belongs in this list.
+ * a messenger conversation rather than by anything on the user card —
+ * `addComment` is one of the endpoints in the API that insist on a bare numeric
+ * ID, `changeScalePoints` documents nothing but `userId` either, and
+ * `updatePurchase` names a purchase, not a person. None of the five belongs in
+ * this list.
  */
 const IDENTIFIED = [
 	'addBalance',
@@ -51,7 +53,7 @@ const GROUP_WRITES = ['addToGroups', 'removeFromGroups', 'setGroups'];
 /**
  * The Tech API's largest surface, and its most one-sided.
  *
- * Twenty-five operations, none of which can create or delete a person: the Tech
+ * Twenty-seven operations, none of which can create or delete a person: the Tech
  * API only reads and edits users that already exist. Creating one is the legacy
  * Import API's job, which is what the GetCourse Legacy node's User resource
  * covers.
@@ -84,6 +86,13 @@ const operation: INodeProperties = {
 			action: 'Add a user to groups',
 			description:
 				'Добавить пользователя в группы, не трогая остальные привязки. Answers with the groups the person belongs to afterwards.',
+		},
+		{
+			name: 'Change Scale Points',
+			value: 'changeScalePoints',
+			action: 'Change the scale points of a user',
+			description:
+				'Начислить или списать баллы по шкале достижений: положительное число начисляет, отрицательное списывает',
 		},
 		{
 			name: 'Create Diploma',
@@ -228,6 +237,13 @@ const operation: INodeProperties = {
 			action: 'Update the custom fields of a user',
 			description:
 				'Изменить дополнительные поля пользователя по их числовым ID. The field picker reads the list from the user named above, because this API has no account-wide listing of custom fields.',
+		},
+		{
+			name: 'Update Purchase',
+			value: 'updatePurchase',
+			action: 'Update a purchase of a user',
+			description:
+				'Изменить покупку — период доступа и ответственного преподавателя. The purchase is named by its own ID, the one Get Purchases returns in each row.',
 		},
 	],
 };
@@ -556,6 +572,121 @@ const commentText: INodeProperties = {
 	description: 'Текст комментария',
 };
 
+const scaleUserId: INodeProperties = {
+	displayName: 'User ID',
+	name: 'scaleUserId',
+	type: 'string',
+	default: '',
+	required: true,
+	displayOptions: showFor(['changeScalePoints']),
+	description:
+		'ID пользователя, которому начисляются баллы. The specification of this endpoint names only a numeric user ID, no e-mail and no phone number.',
+};
+
+const scaleId: INodeProperties = {
+	displayName: 'Scale ID',
+	name: 'scaleId',
+	type: 'string',
+	default: '',
+	required: true,
+	displayOptions: showFor(['changeScalePoints']),
+	description:
+		'ID шкалы достижений. No endpoint lists scales by name: Get Scale Results on the School resource shows the IDs already in use.',
+};
+
+const scalePoints: INodeProperties = {
+	displayName: 'Points',
+	name: 'scalePoints',
+	type: 'number',
+	default: 0,
+	required: true,
+	displayOptions: showFor(['changeScalePoints']),
+	description:
+		'Баллы: положительное число начисляет, отрицательное списывает. Whole numbers only — the API declares an integer, so the node refuses a fraction rather than let it be cut.',
+};
+
+const scaleComment: INodeProperties = {
+	displayName: 'Comment',
+	name: 'scaleComment',
+	type: 'string',
+	default: '',
+	displayOptions: showFor(['changeScalePoints']),
+	description: 'Комментарий к начислению или списанию',
+};
+
+const purchaseId: INodeProperties = {
+	displayName: 'Purchase ID',
+	name: 'userProductId',
+	type: 'string',
+	default: '',
+	required: true,
+	displayOptions: showFor(['updatePurchase']),
+	description:
+		'ID покупки — the ID of a row from Get Purchases, not its product_id. No e-mail or user ID is needed: the purchase is named on its own.',
+};
+
+const purchaseFields: INodeProperties = {
+	displayName: 'Purchase Fields',
+	name: 'purchaseFields',
+	type: 'collection',
+	placeholder: 'Add Field',
+	default: {},
+	displayOptions: showFor(['updatePurchase']),
+	options: [
+		{
+			displayName: 'Finish At',
+			name: 'finish_at',
+			type: 'dateTime',
+			default: '',
+			description:
+				'Дата окончания покупки. Sent as wall-clock time in the workflow timezone — GetCourse takes nothing but YYYY-MM-DD HH:MM:SS here.',
+		},
+		{
+			displayName: 'Period Type',
+			name: 'period_type',
+			type: 'options',
+			default: 'limited',
+			options: [
+				{ name: 'Limited (Ограниченная)', value: 'limited' },
+				{ name: 'Unlimited (Бессрочная)', value: 'unlimited' },
+			],
+			description: 'Тип периода покупки. Switching it leaves the start and finish dates as they are.',
+		},
+		{
+			displayName: 'Responsible Teacher ID',
+			name: 'response_teacher_id',
+			type: 'string',
+			default: '',
+			description:
+				'ID ответственного преподавателя — a user ID of an employee. No endpoint lists teachers.',
+		},
+		{
+			displayName: 'Start At',
+			name: 'start_at',
+			type: 'dateTime',
+			default: '',
+			description:
+				'Дата начала покупки. Sent as wall-clock time in the workflow timezone — GetCourse takes nothing but YYYY-MM-DD HH:MM:SS here.',
+		},
+	],
+};
+
+/** The same "blank means leave alone, clearing is said out loud" rule as Fields to Clear above. */
+const purchaseFieldsToClear: INodeProperties = {
+	displayName: 'Fields to Clear',
+	name: 'purchaseFieldsToClear',
+	type: 'multiOptions',
+	default: [],
+	displayOptions: showFor(['updatePurchase']),
+	options: [
+		{ name: 'Finish At', value: 'finish_at' },
+		{ name: 'Responsible Teacher ID', value: 'response_teacher_id' },
+		{ name: 'Start At', value: 'start_at' },
+	],
+	description:
+		'Поля покупки, которые нужно очистить — каждое отправляется как null. A field named here is cleared even when Purchase Fields also carries a value for it.',
+};
+
 export const description: INodeProperties[] = [
 	operation,
 	...userIdentifierProperties('user', IDENTIFIED),
@@ -579,4 +710,11 @@ export const description: INodeProperties[] = [
 	commentUserId,
 	authorId,
 	commentText,
+	scaleUserId,
+	scaleId,
+	scalePoints,
+	scaleComment,
+	purchaseId,
+	purchaseFields,
+	purchaseFieldsToClear,
 ];

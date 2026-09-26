@@ -1,7 +1,7 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 
-import { toGetCourseDate } from '../../../../../utils/dates';
+import { toGetCourseDate, toGetCourseDateTime } from '../../../../../utils/dates';
 import { omitEmpty } from '../../../../../utils/query';
 import { unknownOperation } from '../../../../../utils/router';
 import { customFieldsPayload, toItems, userIdentifier } from '../../helpers/request';
@@ -397,6 +397,128 @@ async function addComment(
 	return writeRows(data, { userId: Number(userId), authorId: Number(authorId) });
 }
 
+/** Reads a required whole-number ID, refusing anything else before it reaches GetCourse. */
+function wholeNumber(
+	this: IExecuteFunctions,
+	itemIndex: number,
+	parameter: string,
+	label: string,
+	hint: string,
+): number {
+	const raw = String(this.getNodeParameter(parameter, itemIndex, '') ?? '').trim();
+	const value = Number(raw);
+
+	if (raw === '' || !Number.isInteger(value)) {
+		throw new NodeOperationError(this.getNode(), `${label} must be a whole number`, {
+			description: `Received ${JSON.stringify(raw)}. ${hint}`,
+			itemIndex,
+		});
+	}
+
+	return value;
+}
+
+/**
+ * `POST /user/edit-scale` — adds points to an achievement scale, or takes them.
+ *
+ * The body documents `userId` alone, unlike the user endpoints that also take an
+ * e-mail or a phone number, so the person is named by ID only. The answer is
+ * documented as the history entry the change made.
+ */
+async function changeScalePoints(
+	this: IExecuteFunctions,
+	itemIndex: number,
+): Promise<INodeExecutionData[]> {
+	const userId = wholeNumber.call(this, itemIndex, 'scaleUserId', 'User ID', 'Give the numeric ID of the user.');
+	const scaleId = wholeNumber.call(
+		this,
+		itemIndex,
+		'scaleId',
+		'Scale ID',
+		'Give the numeric ID of the achievement scale; Get Scale Results on the School resource shows the ones in use.',
+	);
+
+	const value = Number(this.getNodeParameter('scalePoints', itemIndex, 0));
+	// Declared an integer: a fraction would be cut or refused somewhere out of sight.
+	if (!Number.isInteger(value)) {
+		throw new NodeOperationError(this.getNode(), 'Points must be a whole number', {
+			description: `Received ${value}. A positive number adds points, a negative one takes them away.`,
+			itemIndex,
+		});
+	}
+
+	const comment = String(this.getNodeParameter('scaleComment', itemIndex, '') ?? '').trim();
+
+	const data = await techApiRequest.call(this, 'POST', '/user/edit-scale', {
+		userId,
+		scaleId,
+		value,
+		...(comment === '' ? {} : { description: comment }),
+	});
+
+	return writeRows(data, { userId, scaleId, value });
+}
+
+/**
+ * `POST /userproduct/update-fields` — the dates, period type and teacher of a purchase.
+ *
+ * Checked against a live account: the dates take `YYYY-MM-DD HH:MM:SS` and
+ * nothing else (an ISO string with an offset and a bare date are both refused
+ * with «Неправильный формат поля»), `null` clears a date or the teacher, and
+ * switching the period type leaves the dates alone. The answer is an empty
+ * array, so what the node sent is reported instead.
+ */
+async function updatePurchase(
+	this: IExecuteFunctions,
+	itemIndex: number,
+): Promise<INodeExecutionData[]> {
+	const userProductId = wholeNumber.call(
+		this,
+		itemIndex,
+		'userProductId',
+		'Purchase ID',
+		'Give the ID of a purchase — the id field of a row from Get Purchases, not the product ID.',
+	);
+
+	const fields = this.getNodeParameter('purchaseFields', itemIndex, {}) as IDataObject;
+	const clear = this.getNodeParameter('purchaseFieldsToClear', itemIndex, []) as string[];
+	const timezone = this.getTimezone();
+
+	const teacher = String(fields.response_teacher_id ?? '').trim();
+	if (teacher !== '' && !Number.isInteger(Number(teacher))) {
+		throw new NodeOperationError(this.getNode(), `"${teacher}" is not a teacher ID`, {
+			description: 'Give the numeric user ID of the teacher, or name the field under Fields to Clear to remove the teacher.',
+			itemIndex,
+		});
+	}
+
+	const updates: IDataObject = omitEmpty({
+		period_type: fields.period_type,
+		start_at: toGetCourseDateTime(fields.start_at, timezone),
+		finish_at: toGetCourseDateTime(fields.finish_at, timezone),
+		response_teacher_id: teacher === '' ? undefined : Number(teacher),
+	});
+
+	// `null` is what empties a date or the teacher; the explicit request wins.
+	for (const field of clear) updates[field] = null;
+
+	// GetCourse accepts a request that changes nothing and answers success, which
+	// would hide a workflow that forgot to say what to change.
+	if (Object.keys(updates).length === 0) {
+		throw new NodeOperationError(this.getNode(), 'Nothing to update', {
+			description: 'Add at least one field to Purchase Fields, or name one under Fields to Clear.',
+			itemIndex,
+		});
+	}
+
+	const data = await techApiRequest.call(this, 'POST', '/userproduct/update-fields', {
+		user_product_id: userProductId,
+		...updates,
+	});
+
+	return writeRows(data, { user_product_id: userProductId, updated: updates });
+}
+
 export async function execute(
 	this: IExecuteFunctions,
 	operation: string,
@@ -459,6 +581,10 @@ export async function execute(
 			return await createDiploma.call(this, itemIndex);
 		case 'addComment':
 			return await addComment.call(this, itemIndex);
+		case 'changeScalePoints':
+			return await changeScalePoints.call(this, itemIndex);
+		case 'updatePurchase':
+			return await updatePurchase.call(this, itemIndex);
 		default:
 			throw unknownOperation.call(this, 'user', operation, itemIndex);
 	}

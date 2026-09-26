@@ -12,6 +12,28 @@ unavoidable it is a major version, and this file says exactly what to change and
 Below 1.0.0 that slot is the minor number, which is what semantic versioning reserves it for,
 and a release that renames or removes anything says **action required** in its heading.
 
+## [0.3.0] — 2026-09-26
+
+### Added
+
+- **User → Update Purchase** (`POST /userproduct/update-fields`): the start and finish dates,
+  the period type and the responsible teacher of a purchase, named by the `id` that Get
+  Purchases returns. GetCourse refuses dates in any form but `YYYY-MM-DD HH:MM:SS`, so the
+  node converts them in the workflow's timezone. A blank field leaves the value alone;
+  **Fields to Clear** empties a date or removes the teacher.
+- **User → Change Scale Points** (`POST /user/edit-scale`): adds points to an achievement scale,
+  or takes them away with a negative number. Whole numbers only, and the user by numeric ID,
+  as the specification has it.
+- **School → Get Scale Results** (`GET /common/get-scale`): every user's points on every
+  achievement scale, paged by a thousand.
+
+### Fixed
+
+- **A request GetCourse refuses now says why.** The GetCourse node dropped the reason the
+  server gave, so a refused request read only «The request did not pass validation.» while
+  GetCourse had answered, for example, «Неправильный формат поля start_at.». The reason is in
+  the error description again, below the server's own message.
+
 ## [0.2.3] — 2026-09-23
 
 ### Changed

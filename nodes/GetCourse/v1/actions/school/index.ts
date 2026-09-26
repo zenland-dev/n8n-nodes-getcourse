@@ -59,6 +59,13 @@ export const description: INodeProperties[] = [
 				description: 'Тренинги аккаунта, with their lesson counts and status',
 			},
 			{
+				name: 'Get Scale Results',
+				value: 'getScaleResults',
+				action: 'Get the results of achievement scales',
+				description:
+					'Баллы пользователей по шкалам достижений — одна строка на пользователя и шкалу. No endpoint names the scales, so a row carries only the scale ID.',
+			},
+			{
 				name: 'Get Survey Answers',
 				value: 'getSurveyAnswers',
 				action: 'Get the answers to a survey',
@@ -77,7 +84,7 @@ export const description: INodeProperties[] = [
 		description:
 			"ID анкеты. There is no endpoint listing surveys — the ID comes from the survey's address in the account.",
 	},
-	...returnAllProperties(showFor(['getSurveyAnswers'])),
+	...returnAllProperties(showFor(['getScaleResults', 'getSurveyAnswers'])),
 	{
 		displayName: 'Resolve Question Titles',
 		name: 'resolveQuestions',
@@ -136,6 +143,38 @@ async function getSurveyAnswers(
 }
 
 /**
+ * `GET /common/get-scale` — every user's standing on every achievement scale.
+ *
+ * Paged by `limit` (at most 1000) and `offset`, with no total and no filter, so
+ * the walk stops on the first short page. An account without scales answers an
+ * empty list, which stays empty.
+ */
+async function getScaleResults(
+	this: IExecuteFunctions,
+	itemIndex: number,
+): Promise<INodeExecutionData[]> {
+	const returnAll = this.getNodeParameter('returnAll', itemIndex, false) as boolean;
+	const limit = this.getNodeParameter('limit', itemIndex, 50) as number;
+	const wanted = returnAll ? Number.POSITIVE_INFINITY : Math.max(1, limit);
+
+	const pageSize = 1000; // The documented maximum.
+	const collected: IDataObject[] = [];
+
+	for (let offset = 0; collected.length < wanted; offset += pageSize) {
+		const page = await techApiRequest.call(this, 'GET', '/common/get-scale', undefined, {
+			limit: Math.min(pageSize, wanted - collected.length),
+			offset,
+		});
+
+		const rows = Array.isArray(page) ? (page as IDataObject[]) : [];
+		collected.push(...rows);
+		if (rows.length < pageSize) break;
+	}
+
+	return collected.slice(0, wanted).map((row) => ({ json: row }));
+}
+
+/**
  * Joins an answer row to the survey's question map.
  *
  * The API keeps them apart — `answers` is keyed by question id, `questions` maps
@@ -176,6 +215,7 @@ export async function execute(
 	itemIndex: number,
 ): Promise<INodeExecutionData[]> {
 	if (operation === 'getSurveyAnswers') return await getSurveyAnswers.call(this, itemIndex);
+	if (operation === 'getScaleResults') return await getScaleResults.call(this, itemIndex);
 
 	const endpoint = DICTIONARIES[operation];
 	if (endpoint === undefined) throw unknownOperation.call(this, 'school', operation, itemIndex);

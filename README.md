@@ -93,10 +93,10 @@ users or orders at all.
 
 | Resource | Operations |
 |---|---|
-| **User** (25) | Get · Get by Chat ID · Get by Telegram Chat ID · Get Custom Fields · Get Deals · Get Purchases · Get Trainings · Get Schedule · Get Goals · Get Diplomas · Get Groups · Get Balance · Get Lesson Answers · Get Survey Answers · Get Dialogs · Get HelpDesk Dialogs · Update · Update Custom Fields · Add to Groups · Remove From Groups · Set Groups · Add Balance · Set Personal Manager · Create Diploma · Add Comment |
+| **User** (27) | Get · Get by Chat ID · Get by Telegram Chat ID · Get Custom Fields · Get Deals · Get Purchases · Get Trainings · Get Schedule · Get Goals · Get Diplomas · Get Groups · Get Balance · Get Lesson Answers · Get Survey Answers · Get Dialogs · Get HelpDesk Dialogs · Update · Update Custom Fields · Update Purchase · Add to Groups · Remove From Groups · Set Groups · Add Balance · Change Scale Points · Set Personal Manager · Create Diploma · Add Comment |
 | **Order** (11) | Get · Get Custom Fields · Get Comments · Get Calls · Get Many Tags · Get Cancel Reasons · Update · Update Custom Fields · Add Positions · Remove Positions · Add Comment |
 | **Offer** (3) | Get · Get Many · Get Many Tags |
-| **School** (5) | Get Many Groups · Get Many Departments · Get Many Trainings · Get Many Personal Managers · Get Survey Answers |
+| **School** (6) | Get Many Groups · Get Many Departments · Get Many Trainings · Get Many Personal Managers · Get Survey Answers · Get Scale Results |
 | **Dialog** (5) | Add Comment · Add Note · Change Department · Close · Get History |
 | **HelpDesk Ticket** (5) | Add Comment · Add Note · Change Department · Close · Get History |
 | **Lesson** (3) | Get Many Answers · Add Comment to Answer · Set Answer Status |
@@ -149,6 +149,24 @@ order — so the user operation emits one item carrying every field and the orde
 item per field.
 
 Typing an ID by hand still works, and so does an expression.
+
+### Purchases and achievement scales
+
+**Update Purchase** changes the start and finish dates, the period type and the responsible
+teacher of a purchase. The purchase is named by its own ID — `id` in a row of **User → Get
+Purchases**, not `product_id` — and nothing else, so no user needs to be named. GetCourse takes
+the dates only as `YYYY-MM-DD HH:MM:SS` and refuses an ISO string or a bare date; the node
+converts whatever the date picker or an expression gives, in the workflow's timezone. Switching
+the period type between limited and unlimited leaves both dates as they were. A blank field
+means "leave alone": to empty a date or remove the teacher, name it under **Fields to Clear**.
+The answer is empty, so the node reports what it sent; read the purchase again to see it stored.
+
+**Get Scale Results** on the School resource lists every user's points on every achievement
+scale, one row per user and scale. No method names the scales or lists them, so a row carries
+only `scale_id`. **Change Scale Points** on the User resource adds points to a scale or, with a
+negative number, takes them away. It names the user by numeric ID only, as its specification
+does. The specification says the answer is the history record the change made. A successful
+change has not been tried on a live account yet, only the refusal of a scale that does not exist.
 
 ## GetCourse Legacy node
 

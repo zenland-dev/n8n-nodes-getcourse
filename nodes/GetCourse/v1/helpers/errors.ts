@@ -48,7 +48,7 @@ export function toTechApiError(node: INode, error: unknown, status?: number): No
 	if (error instanceof NodeApiError && status === undefined) return error;
 
 	const httpCode = status ?? extractStatusCode(error);
-	const body = (extractResponseBody(error) ?? {}) as TechApiEnvelope;
+	const body = (extractResponseBody(error) ?? envelopeOf(error) ?? {}) as TechApiEnvelope;
 
 	const reported = typeof body.message === 'string' && body.message !== '' ? body.message : '';
 	const details = describeErrors(body.errors);
@@ -96,6 +96,24 @@ export function toTechApiError(node: INode, error: unknown, status?: number): No
 		description: description.trim() === '' ? undefined : description.trim(),
 		httpCode: httpCode === undefined ? undefined : String(httpCode),
 	});
+}
+
+/**
+ * The envelope inside an error that `envelopeError` made.
+ *
+ * n8n keeps it under `errorResponse`, where `extractResponseBody` does not look.
+ * Up to 0.2.3 every failure the transport passed on that way lost GetCourse's own
+ * reason: a 400 read only "The request did not pass validation." while the body
+ * said «Неправильный формат поля start_at.».
+ */
+function envelopeOf(error: unknown): TechApiEnvelope | undefined {
+	if (!(error instanceof NodeApiError)) return undefined;
+
+	const response = (error as unknown as { errorResponse?: unknown }).errorResponse;
+
+	return response !== null && typeof response === 'object' && !Array.isArray(response)
+		? (response as TechApiEnvelope)
+		: undefined;
 }
 
 /**
