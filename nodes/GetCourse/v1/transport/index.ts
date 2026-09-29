@@ -40,6 +40,11 @@ export interface TechRequestOptions {
 	maxAttempts?: number;
 	/** Extra headers, merged last. */
 	headers?: IDataObject;
+	/**
+	 * How an array in the query is spelled. The mailing reads take `ids[]=1&ids[]=2`
+	 * and answer 500 to `ids=1,2` and to a repeated `ids`.
+	 */
+	arrayFormat?: IHttpRequestOptions['arrayFormat'];
 }
 
 interface AccountConnection {
@@ -146,6 +151,7 @@ export async function techApiRequest(
 
 	const query = compactQuery(qs);
 	if (Object.keys(query).length > 0) requestOptions.qs = query;
+	if (options.arrayFormat !== undefined) requestOptions.arrayFormat = options.arrayFormat;
 
 	const maxAttempts = options.maxAttempts ?? 4;
 

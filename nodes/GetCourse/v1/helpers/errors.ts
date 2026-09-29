@@ -75,10 +75,13 @@ export function toTechApiError(node: INode, error: unknown, status?: number): No
 			break;
 		case 404:
 			message = 'GetCourse found nothing at that address';
-			description =
-				description === ''
-					? 'The object ID may be wrong, or the method may not exist on this account version.'
-					: description;
+			// GetCourse usually names what it did not find («Mailing 12 is not found»,
+			// «Объект не найден»), and that is the useful part; the guess only stands in
+			// for a 404 with no message of its own.
+			description = [reported, details].filter((part) => part !== '').join('\n');
+			if (description === '') {
+				description = 'The object ID may be wrong, or the method may not exist on this account version.';
+			}
 			break;
 		case 429:
 			message = 'GetCourse rate limit exceeded';

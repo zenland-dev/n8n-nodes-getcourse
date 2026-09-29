@@ -12,6 +12,36 @@ unavoidable it is a major version, and this file says exactly what to change and
 Below 1.0.0 that slot is the minor number, which is what semantic versioning reserves it for,
 and a release that renames or removes anything says **action required** in its heading.
 
+## [0.4.0] — 2026-09-29
+
+### Added
+
+- **School → Get Many Mailings** (`GET /common/get-mailing`): the school's mailings, newest
+  first, filtered by category, mailing IDs, parent mailing, part of the title, channel and type.
+  **Include Settings** adds each mailing's sending settings under `params`.
+- **School → Get Mailing Stats** (`GET /common/get-mailing-stat`): one row per mailing with its
+  counters — recipients, sent, viewed, clicked, answered, errors, unsubscribed and the rest —
+  under the same filters but the parent and the title.
+- **School → Get Mailing Content** (`GET /common/get-mailing-content`): the subject, the HTML
+  body and the files of one mailing. `files` comes parsed; the string GetCourse sent is kept as
+  `files_json`.
+
+The three methods appeared in the Tech API specification in September 2026. Both lists read
+pages of 1000, the most GetCourse allows, and drop a row that comes back twice when a new
+mailing shifts the pages during a long read. Mailing IDs go out as `ids[]=…`: GetCourse answers
+a server error to a comma list and to a repeated `ids`.
+
+### Fixed
+
+- **A 404 now says what GetCourse did not find.** The reason the server gave, such as «Mailing 12
+  is not found», was dropped for a 404 and replaced by a guess about a wrong ID or a missing
+  method; the guess now stands in only when GetCourse gives no reason.
+- **The package passes n8n's community package scanner.** GetCourse Trigger re-threw the error of
+  a failed subscription from a `catch` block, which the scanner refuses whatever an
+  `eslint-disable` comment says. It lets the error travel on through `try/finally` now. Nothing
+  changes for a workflow: a subscription that fails half-way is still rolled back, and the error
+  shown is still GetCourse's.
+
 ## [0.3.0] — 2026-09-26
 
 ### Added
@@ -180,6 +210,9 @@ disagree, the code follows the service and says so in a comment at the point it 
 - Published from GitHub Actions with an npm provenance statement, which n8n has required of
   submitted nodes since 1 May 2026.
 
+[0.4.0]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.4.0
+[0.3.0]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.3.0
+[0.2.3]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.2.3
 [0.2.2]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.2.2
 [0.2.1]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.2.1
 [0.2.0]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.2.0

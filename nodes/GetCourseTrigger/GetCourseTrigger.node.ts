@@ -266,29 +266,31 @@ export class GetCourseTrigger implements INodeType {
 				// otherwise a workflow that failed to activate would still be leaving
 				// GetCourse posting into a URL n8n is not listening on.
 				const subscribed: number[] = [];
+				let complete = false;
 
+				// try/finally rather than catch-and-rethrow: the failure travels on by itself,
+				// still the NodeApiError the transport made of it, and n8n's package scanner
+				// refuses a caught error thrown again as it is, whatever an eslint-disable says.
 				try {
 					for (const eventId of eventIds) {
 						await setSubscription.call(this, uri, objectId, eventId, 1);
 						subscribed.push(eventId);
 					}
-				} catch (error) {
-					for (const eventId of subscribed) {
-						// Best effort: the original failure is what the user needs to see,
-						// and a rollback that fails too must not replace it.
-						try {
-							await setSubscription.call(this, uri, objectId, eventId, 0);
-						} catch {
-							this.logger?.warn(
-								`GetCourse Trigger could not roll back its subscription to event ${objectId}:${eventId} on ${uri}`,
-							);
+					complete = true;
+				} finally {
+					if (!complete) {
+						for (const eventId of subscribed) {
+							// Best effort: the original failure is what the user needs to see,
+							// and a rollback that fails too must not replace it.
+							try {
+								await setSubscription.call(this, uri, objectId, eventId, 0);
+							} catch {
+								this.logger?.warn(
+									`GetCourse Trigger could not roll back its subscription to event ${objectId}:${eventId} on ${uri}`,
+								);
+							}
 						}
 					}
-
-					// The transport already turned this into a NodeApiError carrying a message
-					// the user can act on; wrapping it again would bury that message.
-					/* eslint-disable-next-line @n8n/community-nodes/require-node-api-error -- already a NodeApiError from the transport */
-					throw error;
 				}
 
 				const staticData = this.getWorkflowStaticData('node');

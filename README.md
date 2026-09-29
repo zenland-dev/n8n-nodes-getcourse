@@ -96,7 +96,7 @@ users or orders at all.
 | **User** (27) | Get · Get by Chat ID · Get by Telegram Chat ID · Get Custom Fields · Get Deals · Get Purchases · Get Trainings · Get Schedule · Get Goals · Get Diplomas · Get Groups · Get Balance · Get Lesson Answers · Get Survey Answers · Get Dialogs · Get HelpDesk Dialogs · Update · Update Custom Fields · Update Purchase · Add to Groups · Remove From Groups · Set Groups · Add Balance · Change Scale Points · Set Personal Manager · Create Diploma · Add Comment |
 | **Order** (11) | Get · Get Custom Fields · Get Comments · Get Calls · Get Many Tags · Get Cancel Reasons · Update · Update Custom Fields · Add Positions · Remove Positions · Add Comment |
 | **Offer** (3) | Get · Get Many · Get Many Tags |
-| **School** (6) | Get Many Groups · Get Many Departments · Get Many Trainings · Get Many Personal Managers · Get Survey Answers · Get Scale Results |
+| **School** (9) | Get Many Groups · Get Many Departments · Get Many Trainings · Get Many Personal Managers · Get Survey Answers · Get Scale Results · Get Many Mailings · Get Mailing Stats · Get Mailing Content |
 | **Dialog** (5) | Add Comment · Add Note · Change Department · Close · Get History |
 | **HelpDesk Ticket** (5) | Add Comment · Add Note · Change Department · Close · Get History |
 | **Lesson** (3) | Get Many Answers · Add Comment to Answer · Set Answer Status |
@@ -167,6 +167,33 @@ only `scale_id`. **Change Scale Points** on the User resource adds points to a s
 negative number, takes them away. It names the user by numeric ID only, as its specification
 does. The specification says the answer is the history record the change made. A successful
 change has not been tried on a live account yet, only the refusal of a scale that does not exist.
+
+### Mailings
+
+Three reads on the School resource, all added to the Tech API in September 2026.
+
+**Get Many Mailings** lists the school's mailings newest first: title, type, channel, category
+and parent. **Filters** narrow it by category, a list of mailing IDs, a parent mailing, a part of
+the title (GetCourse finds it anywhere in the title), the channel by name — `email`, `sms`,
+`vk`, `ticket` — and the type: manual, notification, queue or template. **Include Settings**
+adds each mailing's sending settings under `params`: recipients, sender, reply address,
+schedule and design. Manual mailings pile up over the years, so a working school can hold a very
+long list; filter it rather than reading everything with Return All.
+
+**Get Mailing Stats** gives one row per mailing with its counters: recipients, sent, viewed,
+clicked, answered, errors, unsubscribed, cancelled, restricted, queued, in progress and new. It
+takes the same filters except the parent and the title. A row carries the mailing's `id` and no
+title; join it to Get Many Mailings on `id`.
+
+**Get Mailing Content** reads one mailing by ID: `subject`, `content` (HTML) and `files`.
+GetCourse sends `files` as JSON written into a string; the node parses it, and keeps the string
+as it came under `files_json`.
+
+Both lists page by 1000, the most GetCourse gives at once, and neither reports a total. The list
+is newest first and read by offset, so a mailing created while a long list is being read pushes
+the rest down a row; the node drops the row that comes back twice. Several mailing IDs go out as
+`ids[]=…&ids[]=…`, the way the specification writes them: a comma list or a repeated `ids` gets
+a server error.
 
 ## GetCourse Legacy node
 
