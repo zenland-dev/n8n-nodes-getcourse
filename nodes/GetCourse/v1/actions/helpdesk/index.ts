@@ -51,11 +51,11 @@ const ticketIdProperty = (displayOptions: INodeProperties['displayOptions']): IN
  * enum, so nothing on the wire rejects a channel the account has not connected.
  */
 const TRANSPORTS: INodeProperties['options'] = [
-	{ name: 'Chatium', value: 6 },
 	{ name: 'Email', value: 1 },
 	{ name: 'Facebook', value: 4 },
 	{ name: 'Feedback Form (Форма обратной связи)', value: 11 },
 	{ name: 'GC Form (Форма GC)', value: 12 },
+	{ name: 'GetCourse Mobile', value: 6 },
 	{ name: 'Instagram', value: 14 },
 	{ name: 'MAX', value: 13 },
 	{ name: 'Site (Сайт)', value: 0 },

@@ -59,7 +59,7 @@ export const description: INodeProperties[] = [
 	},
 	{
 		displayName:
-			'Предложение приходит целиком, частичного ответа у метода нет. Ставка НДС — vat: none, vat0, vat5, vat7, vat10, vat22; тип продукта — products[].type: groups, simple, training, tariff, cms_template, extend_limits, user_balance, virtual_balance, promo_code, chatium_course, hd_advert, ticket, ai_token, и вложенные training и stream заполнены только у продуктов типа training. Теги предложения — это объект вида {"1": "Программирование"}, а не массив, и это единственное место в API, где виден ID тега; params спецификация объявляет объектом, хотя в собственном примере он пустой массив, так что читать его надо с оглядкой на обе формы.',
+			'Предложение приходит целиком, частичного ответа у метода нет. Ставка НДС — vat: none, vat0, vat5, vat7, vat10, vat22; тип продукта — products[].type: simple, training, groups, promo_code, user_balance, virtual_balance, и вложенные training и stream заполнены только у продуктов типа training. Теги предложения — это объект вида {"1": "Программирование"}, а не массив, и это единственное место в API, где виден ID тега; params спецификация объявляет объектом, хотя в собственном примере он пустой массив, так что читать его надо с оглядкой на обе формы.',
 		name: 'offerShapeNotice',
 		type: 'notice',
 		default: '',

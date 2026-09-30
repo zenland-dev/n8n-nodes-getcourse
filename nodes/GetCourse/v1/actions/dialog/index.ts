@@ -49,9 +49,9 @@ const dialogIdProperty = (displayOptions: INodeProperties['displayOptions']): IN
  * sharing one that would offer «Входящие» a channel it cannot deliver over.
  */
 const TRANSPORTS: INodeProperties['options'] = [
-	{ name: 'Chatium', value: 6 },
 	{ name: 'Email', value: 1 },
 	{ name: 'Facebook', value: 4 },
+	{ name: 'GetCourse Mobile', value: 6 },
 	{ name: 'MAX', value: 13 },
 	{ name: 'Site (Сайт)', value: 0 },
 	{ name: 'SMS', value: 2 },

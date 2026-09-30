@@ -12,6 +12,17 @@ unavoidable it is a major version, and this file says exactly what to change and
 Below 1.0.0 that slot is the minor number, which is what semantic versioning reserves it for,
 and a release that renames or removes anything says **action required** in its heading.
 
+## [0.4.1] — 2026-09-30
+
+### Changed
+
+- **Channel 6 is called GetCourse Mobile.** The Tech API specification now names it so instead
+  of Chatium, and the Transport list of «Входящие» and HelpDesk replies follows. The value is
+  still `6`, so a saved workflow keeps sending over the same channel.
+- **The note on Offer → Get and Get Many lists six product types**: `simple`, `training`,
+  `groups`, `promo_code`, `user_balance`, `virtual_balance`. The specification dropped the other
+  seven from `products[].type` in the same revision. No operation, field or default changed.
+
 ## [0.4.0] — 2026-09-29
 
 ### Added
@@ -210,6 +221,7 @@ disagree, the code follows the service and says so in a comment at the point it 
 - Published from GitHub Actions with an npm provenance statement, which n8n has required of
   submitted nodes since 1 May 2026.
 
+[0.4.1]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.4.1
 [0.4.0]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.4.0
 [0.3.0]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.3.0
 [0.2.3]: https://github.com/zenland-dev/n8n-nodes-getcourse/releases/tag/0.2.3
