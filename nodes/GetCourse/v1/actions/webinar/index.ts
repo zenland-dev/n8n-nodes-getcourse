@@ -44,7 +44,7 @@ export const description: INodeProperties[] = [
 				value: 'addComment',
 				action: 'Add a comment to a webinar chat',
 				description:
-					'Опубликовать сообщение в чате вебинара от имени модератора. GetCourse answers with an empty envelope, so the new comment gets no ID that any other call could use.',
+					'Опубликовать сообщение в чате вебинара от имени модератора. GetCourse answers with the new comment_id, which Moderate Comment takes.',
 			},
 			{
 				name: 'Get Many',
@@ -141,14 +141,15 @@ export const description: INodeProperties[] = [
 				type: 'boolean',
 				default: false,
 				description:
-					'Whether to answer the person privately (ответить лично), so the message reaches them and nobody else in the chat',
+					'Whether to answer the person privately (ответить лично), so the message reaches them and nobody else in the chat. Needs Reply to User ID and Reply to User Type.',
 			},
 			{
 				displayName: 'Reply to User ID',
 				name: 'replyToUserId',
 				type: 'string',
 				default: '',
-				description: 'ID участника, на чьё сообщение отвечаем',
+				description:
+					'ID участника, на чьё сообщение отвечаем. Required for a private reply; GetCourse sends it with the Webinar Comments event, in webinar_user.',
 			},
 			{
 				displayName: 'Reply to User Type',
@@ -156,7 +157,7 @@ export const description: INodeProperties[] = [
 				type: 'number',
 				default: 1,
 				description:
-					'Тип участника, на чьё сообщение отвечаем. Спецификация не объявляет для этого поля ни одного значения и копирует пример из соседнего — известно лишь, что в модерации участников тот же параметр описан как «1 или 2».',
+					'Тип участника, на чьё сообщение отвечаем: 1 или 2. Required for a private reply; GetCourse sends it with the Webinar Comments event, as the type of the user in webinar_user.',
 			},
 			{
 				displayName: 'Webinar Launch Number',
@@ -390,24 +391,50 @@ async function addComment(
 	const fields = this.getNodeParameter('additionalFields', itemIndex, {}) as IDataObject;
 	const body: IDataObject = { webinarId, moderatorId, text };
 
-	if (fields.isPrivateReply === true) body.isPrivateReply = true;
-
 	const replyToUserId = optionalNumber(fields.replyToUserId);
 	if (replyToUserId !== undefined) body.replyToUserId = replyToUserId;
 
 	const replyToUserType = optionalNumber(fields.replyToUserType);
 	if (replyToUserType !== undefined) body.replyToUserType = replyToUserType;
 
+	if (fields.isPrivateReply === true) {
+		// The specification of 12.10.2026 makes both mandatory for a private message.
+		if (replyToUserId === undefined || replyToUserType === undefined) {
+			throw new NodeOperationError(
+				this.getNode(),
+				'A private reply needs Reply to User ID and Reply to User Type',
+				{
+					description:
+						'GetCourse sends a private message only to a participant named by both. The Webinar Comments ' +
+						'event of the GetCourse Trigger carries them, in webinar_user.',
+					itemIndex,
+				},
+			);
+		}
+		body.isPrivateReply = true;
+	}
+
 	const launch = optionalNumber(fields.webinarLaunchNumber);
 	if (launch !== undefined) body.webinarLaunchNumber = launch;
 
 	const data = await techApiRequest.call(this, 'POST', '/webinar/add-comment', body);
+	const sent = { success: true, webinar_id: webinarId, moderator_id: moderatorId };
 
-	// The documented success schema is the bare envelope — no data member at all —
-	// so the comment's own ID never comes back and there is nothing to pass through.
-	return toItems(data, { success: true, webinar_id: webinarId, moderator_id: moderatorId }).map(
-		(row) => ({ json: row }),
-	);
+	// Since 12.10.2026 the specification answers `data: {comment_id, result}`; until then
+	// it documented the bare envelope. Any other shape is passed through as before.
+	if (data === null || typeof data !== 'object' || Array.isArray(data)) {
+		return toItems(data, sent).map((row) => ({ json: row }));
+	}
+
+	const answer = data as IDataObject;
+	if (answer.result === false) {
+		throw new NodeOperationError(this.getNode(), 'GetCourse did not add the comment', {
+			description: 'GetCourse accepted the request but answered result: false, without a reason.',
+			itemIndex,
+		});
+	}
+
+	return [{ json: { ...sent, ...answer } }];
 }
 
 async function moderateComment(

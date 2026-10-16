@@ -12,6 +12,23 @@ unavoidable it is a major version, and this file says exactly what to change and
 Below 1.0.0 that slot is the minor number, which is what semantic versioning reserves it for,
 and a release that renames or removes anything says **action required** in its heading.
 
+## [0.4.2] — 2026-10-13
+
+### Changed
+
+- **Webinar → Add Comment returns the new comment's ID.** The Tech API specification now
+  answers `data: {comment_id, result}`, where it used to document an empty envelope. The output
+  keeps `success`, `webinar_id` and `moderator_id` and adds what GetCourse sent, so `comment_id`
+  can go straight into Moderate Comment. Before this, an answer with `data` replaced the three
+  fields instead of joining them.
+- **`result: false` is an error.** GetCourse can accept the request and still report the
+  comment as not added; the operation used to pass that on as a success.
+- **A private reply without the participant is refused before the request.** The specification
+  makes Reply to User ID and Reply to User Type mandatory once Is Private Reply is on, and names
+  where both come from: `webinar_user` in the Webinar Comments event. Reply to User Type is
+  documented as 1 or 2; its description now says so instead of saying the specification gives
+  no values.
+
 ## [0.4.1] — 2026-09-30
 
 ### Changed
